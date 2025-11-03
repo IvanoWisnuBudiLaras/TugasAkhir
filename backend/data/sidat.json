@@ -1,0 +1,152 @@
+[
+  {
+    "id": 1,
+    "pertanyaan": "Kalau ada kegiatan di desa, kamu lebih suka...",
+    "opsi": [
+      "Jadi panitia dan bantu mengatur jalannya acara",
+      "Bantu bagian teknis, seperti alat, listrik, atau tenda",
+      "Bikin catatan, data peserta, atau laporan kegiatan",
+      "Datang dan bantu sedikit di semua bagian"
+    ]
+  },
+  {
+    "id": 2,
+    "pertanyaan": "Kalau menghadapi masalah di tempat kerja, kamu:",
+    "opsi": [
+      "Diskusi bareng orang lain cari solusi",
+      "Langsung praktek dan perbaiki sendiri",
+      "Analisis dulu biar tahu penyebab pastinya",
+      "Diam dulu, baru bertindak setelah yakin"
+    ]
+  },
+  {
+    "id": 3,
+    "pertanyaan": "Pekerjaan yang bikin kamu semangat adalah:",
+    "opsi": [
+      "Bertemu banyak orang",
+      "Menggunakan alat atau mesin",
+      "Mengatur data atau dokumen",
+      "Menyelesaikan tugas bebas tanpa aturan ketat"
+    ]
+  },
+  {
+    "id": 4,
+    "pertanyaan": "Kalau teman kerja salah, kamu:",
+    "opsi": [
+      "Ingatkan dengan cara baik",
+      "Tunjukkan cara yang benar langsung",
+      "Catat dan evaluasi supaya tidak terulang",
+      "Biarkan, nanti dia sadar sendiri"
+    ]
+  },
+  {
+    "id": 5,
+    "pertanyaan": "Kalau ada pelatihan baru dari desa, kamu:",
+    "opsi": [
+      "Ikut karena suka belajar bareng orang",
+      "Ikut kalau ada praktik langsung",
+      "Ikut kalau ada teori dan data yang jelas",
+      "Lihat dulu manfaatnya"
+    ]
+  },
+  {
+    "id": 6,
+    "pertanyaan": "Saat bekerja dalam tim, kamu lebih suka:",
+    "opsi": [
+      "Berinteraksi dan memotivasi anggota lain",
+      "Menyelesaikan bagian teknisnya",
+      "Menjadi pencatat atau pengatur waktu",
+      "Berpindah-pindah membantu semua"
+    ]
+  },
+  {
+    "id": 7,
+    "pertanyaan": "Kalau ada orang baru, kamu:",
+    "opsi": [
+      "Cepat akrab dan ngobrol",
+      "Cuek tapi bantu kalau perlu",
+      "Mengamati dulu sebelum bicara",
+      "Tergantung suasana hati"
+    ]
+  },
+  {
+    "id": 8,
+    "pertanyaan": "Dalam pekerjaan, kamu paling mengutamakan:",
+    "opsi": [
+      "Hubungan baik dengan orang",
+      "Hasil nyata dan cepat",
+      "Ketelitian dan keteraturan",
+      "Keseimbangan semua hal"
+    ]
+  },
+  {
+    "id": 9,
+    "pertanyaan": "Kalau disuruh memimpin proyek, kamu:",
+    "opsi": [
+      "Ajak tim diskusi dan bagi tugas",
+      "Fokus pada kerja lapangan",
+      "Susun rencana dan catatan detail",
+      "Minta orang lain yang pimpin"
+    ]
+  },
+  {
+    "id": 10,
+    "pertanyaan": "Saat kerjaan menumpuk, kamu:",
+    "opsi": [
+      "Bagi tugas ke tim biar cepat",
+      "Langsung kerjakan satu-satu",
+      "Buat daftar prioritas",
+      "Santai dulu baru lanjut"
+    ]
+  },
+  {
+    "id": 11,
+    "pertanyaan": "Kalau belajar sesuatu yang baru, kamu:",
+    "opsi": [
+      "Lebih cepat kalau diajar orang",
+      "Belajar sendiri dengan praktik",
+      "Baca panduan atau catatan dulu",
+      "Campuran dari semuanya"
+    ]
+  },
+  {
+    "id": 12,
+    "pertanyaan": "Kamu paling nyaman bekerja:",
+    "opsi": [
+      "Dengan banyak orang",
+      "Di lapangan atau bengkel",
+      "Di ruangan rapi dan tenang",
+      "Bebas di mana saja"
+    ]
+  },
+  {
+    "id": 13,
+    "pertanyaan": "Saat melihat alat rusak, kamu:",
+    "opsi": [
+      "Panggil orang yang bisa memperbaiki",
+      "Coba betulkan sendiri",
+      "Catat dan laporkan ke pihak berwenang",
+      "Biarkan dulu, nanti diurus bersama"
+    ]
+  },
+  {
+    "id": 14,
+    "pertanyaan": "Kalau diberi tanggung jawab besar, kamu:",
+    "opsi": [
+      "Ajak tim kerja bareng",
+      "Jalankan langsung tanpa banyak teori",
+      "Rencanakan dan pantau setiap langkah",
+      "Bantu seadanya"
+    ]
+  },
+  {
+    "id": 15,
+    "pertanyaan": "Dalam mengambil keputusan penting, kamu:",
+    "opsi": [
+      "Tanya pendapat orang sekitar",
+      "Berdasarkan pengalaman dan logika",
+      "Analisis dulu data dan risiko",
+      "Mengikuti perasaan"
+    ]
+  }
+]

@@ -1,0 +1,77 @@
+[
+  {
+    "id": 1,
+    "pertanyaan": "Apakah Anda percaya bahwa usaha bisa dilakukan di usia berapa pun?",
+    "opsi": ["Iya", "Mungkin", "Tidak"]
+  },
+  {
+    "id": 2,
+    "pertanyaan": "Apa tujuan utama memulai usaha?",
+    "opsi": ["Menambah penghasilan / tidak mau berangkat pada orang lain", "Mengisi waktu luang", "Mewujudkan cita-cita / keinginan"]
+  },
+  {
+    "id": 3,
+    "pertanyaan": "Apa yang membuat Anda yakin untuk memulai usaha?",
+    "opsi": ["Pengalaman", "Keluarga", "Keberanian"]
+  },
+  {
+    "id": 4,
+    "pertanyaan": "Apakah Anda lebih suka usaha dengan ide baru atau yang sudah ada?",
+    "opsi": ["Ide baru", "Ide yang sudah ada", ""]
+  },
+  {
+    "id": 5,
+    "pertanyaan": "Apakah Anda sering mencari inspirasi usaha di internet?",
+    "opsi": ["Iya", "Sering / kadang", "Tidak"]
+  },
+  {
+    "id": 6,
+    "pertanyaan": "Usaha berbasis apa yang Anda inginkan?",
+    "opsi": ["Online", "Offline", ""]
+  },
+  {
+    "id": 7,
+    "pertanyaan": "Apakah Anda terbiasa menggunakan media sosial untuk promosi?",
+    "opsi": ["Iya", "Tidak", "Saya sedang mencoba"]
+  },
+  {
+    "id": 8,
+    "pertanyaan": "Apakah Anda sudah mempelajari ide usaha yang Anda buat?",
+    "opsi": ["Sudah", "Belum", ""]
+  },
+  {
+    "id": 9,
+    "pertanyaan": "Apakah Anda terbiasa menetapkan target bulanan?",
+    "opsi": ["Iya", "Kadang", "Tidak"]
+  },
+  {
+    "id": 10,
+    "pertanyaan": "Apa Anda memiliki Modal?",
+    "opsi": ["Belum", "Sedikit", "Banyak"]
+  },
+  {
+    "id": 11,
+    "pertanyaan": "Apakah Anda memiliki tempat yang bisa digunakan untuk usaha?",
+    "opsi": ["Iya", "Masih mencari", "Tidak"]
+  },
+  {
+    "id": 12,
+    "pertanyaan": "Apakah Anda memiliki jaringan relasi untuk mendukung usaha?",
+    "opsi": ["Iya", "Masih sedikit", "Tidak"]
+  },
+  {
+    "id": 13,
+    "pertanyaan": "Apakah keluarga Anda mendukung jika Anda membuka usaha sendiri?",
+    "opsi": ["Mendukung", "Kurang mendukung", "Tidak mendukung"]
+  },
+  {
+    "id": 14,
+    "pertanyaan": "Apakah Anda berniat membuka lapangan kerja bagi orang lain?",
+    "opsi": ["Iya", "Mungkin", "Tidak"]
+  },
+  {
+    "id": 15,
+    "pertanyaan": "Bidang apa yang menurut Anda paling cocok untuk jangka panjang?",
+    "opsi": ["Pendidikan dan sosial", "Teknologi dan mesin", ""]
+  }
+]

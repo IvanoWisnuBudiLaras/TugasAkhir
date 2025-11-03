@@ -1,0 +1,77 @@
+[
+  {
+    "id": 1,
+    "pertanyaan": "Apa Kau Memiliki bakat yang mejalar pada salah satu opsi",
+    "opsi": ["Logika", "Seni", "Kerajinan"]
+  },
+  {
+    "id": 2,
+    "pertanyaan": "Seberapa Suka kamu dengan bakat mu",
+    "opsi": ["Sedikit", "Biasa", "Banget"]
+  },
+  {
+    "id": 3,
+    "pertanyaan": "Jenis kerja yang disukai",
+    "opsi": ["Bertemu banyak orang", "Menggunakan alat / bahan", "Mengatur catatan"]
+  },
+  {
+    "id": 4,
+    "pertanyaan": "Dari kegiatan berikut, mana yang paling membuat Bapak/Ibu merasa produktif",
+    "opsi": ["Membantu orang lain menyelesaikan masalah", "Mengatur / Menyusun hal agar lebih tertib dan efisien", ""]
+  },
+  {
+    "id": 5,
+    "pertanyaan": "Saat dapat tugas baru?",
+    "opsi": ["Bertanya dan kerja sama", "Coba sendiri", "Baca petunjuk"]
+  },
+  {
+    "id": 6,
+    "pertanyaan": "Kalau menghadapi pekerjaan terasa sulit, Bapak/Ibu akan",
+    "opsi": ["Diskusi dengan orang lain", "Coba cari cara sendiri", "Buat catatan masalah dan solusi"]
+  },
+  {
+    "id": 7,
+    "pertanyaan": "Kalau punya modal kecil, ingin usaha apa?",
+    "opsi": ["Warung, dagang", "Produksi kerajinan, makanan, atau servis", "Pengelolaan administrasi, keuangan, / toko"]
+  },
+  {
+    "id": 8,
+    "pertanyaan": "Kegiatan apa yang paling membuat Bapak/Ibu betah berjam-jam?",
+    "opsi": ["Mengobrol dan mendengar cerita orang lain", "Mengurus tanaman, hewan, atau alam sekitar", "Memperbaiki barang rusak atau membuat sesuatu"]
+  },
+  {
+    "id": 9,
+    "pertanyaan": "Menurut Bapak/Ibu, Pekerjaan ideal itu",
+    "opsi": ["Bisa bertemu banyak orang", "Bisa menghasilkan barang", "Bisa memberi ketenangan dan keteraturan"]
+  },
+  {
+    "id": 10,
+    "pertanyaan": "Jika ada pelatihan gratis, Bapak/Ibu pilih",
+    "opsi": ["Komunikasi atau Pelayanan Masyarakat", "Keterampilan teknisi seperti bertanu, servis, atau kerajinan", "Administrasi usaha dan keuangan"]
+  },
+  {
+    "id": 11,
+    "pertanyaan": "Apa yang paling penting dalam bekerja",
+    "opsi": ["Hubungan baik dengan orang lain", "Hasil kerja yang nyata", "Ketertiban dan tanggung jawab"]
+  },
+  {
+    "id": 12,
+    "pertanyaan": "Lima tahun ke depan, cita-cita Bapak/Ibu adalah",
+    "opsi": ["Punya Usaha yang bermanfaat bagi orang lain", "Meningkatkan keterampilan agar mandiri", ""]
+  },
+  {
+    "id": 13,
+    "pertanyaan": "Apa arti sukses menurutmu",
+    "opsi": ["Dikenal dan dihargai banyak orang", "Mampu memenuhi kebutuhan keluarga dengan baik", "Punya usaha sendiri yang berjalan lancar"]
+  },
+  {
+    "id": 14,
+    "pertanyaan": "Apa yang kamu lakukan jika gagal dalam usaha",
+    "opsi": ["Mencoba lagi dengan cara baru", "Beristirahat dulu, lalu berpikir ulang", "Mencari pekerjaan yang lebih aman"]
+  },
+  {
+    "id": 15,
+    "pertanyaan": "Dalam menghadapi masa depan, sikap kamu adalah",
+    "opsi": ["Berani mencoba hal baru", "Fokus pada hal pasti", "Mengikuti keadaan dengan tenang"]
+  }
+]
