@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiService } from '@/services/api';
 
 export default function Home() {
   const router = useRouter();
@@ -142,7 +143,6 @@ export default function Home() {
                   📊 Lihat Data
                 </button>
               </div>
-            </div>
             </div>
 
             {/* View Previous Results */}

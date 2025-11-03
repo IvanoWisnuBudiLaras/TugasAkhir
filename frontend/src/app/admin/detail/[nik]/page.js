@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { apiService } from '../../../services/api';
+import { apiService } from '@/services/api';
 
 export default function UserDetail() {
   const [user, setUser] = useState(null);

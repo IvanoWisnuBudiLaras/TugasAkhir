@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiService } from '../../services/api';
+import { apiService } from '@/services/api';
 
 export default function AdminData() {
   const [data, setData] = useState([]);
