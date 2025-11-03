@@ -55,7 +55,7 @@ This guide covers deploying the EcoQuiz application to Render (backend) and Verc
    - Klik "New Project"
    - Pilih repository frontend Anda
    - Vercel akan otomatis mendeteksi `next.config.mjs` dan `package.json`
-   - Build Command: `bun run build`
+   - Build Command: `npm run build`
    - Klik "Deploy"
 
 3. **Environment Variables (Optional)**
@@ -94,7 +94,7 @@ This guide covers deploying the EcoQuiz application to Render (backend) and Verc
 1. **Build Failed**: Cek `package.json` dependencies
 2. **API Connection**: Pastikan API URL di admin sudah di-update dengan URL Render
 3. **Environment Variables**: Cek `vercel.json` configuration
-4. **Bun Issues**: Jika build gagal, coba pakai `npm run build`
+4. **Dependencies**: Pastikan semua dependencies ter-install dengan `npm install`
 
 ## Cost Estimation
 
