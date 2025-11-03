@@ -198,66 +198,42 @@ export default function Result() {
             <h4 className="font-semibold text-yellow-800 mb-2">💡 Career Tips</h4>
             <ul className="text-yellow-700 space-y-1">
               <li>• Focus on developing the key skills listed above</li>
-              <li>• Look for internships or entry-level positions in recommended fields</li>
-              <li>• Build a portfolio showcasing your relevant abilities</li>
-              <li>• Network with professionals in your target industry</li>
               <li>• Consider taking relevant courses or certifications</li>
+              <li>• Build a portfolio that showcases your abilities</li>
+              <li>• Network with professionals in this field</li>
             </ul>
           </div>
 
-          {/* Detailed Analysis */}
+          {/* Detail Analysis */}
           {detail_analisis && (
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
-              <h4 className="font-semibold text-blue-800 mb-2">🔍 Detailed Analysis</h4>
-              <div className="text-blue-700 space-y-2">
-                {detail_analisis.personality && (
-                  <div>
-                    <strong>Personality Match:</strong> {detail_analisis.personality}
-                  </div>
-                )}
-                {detail_analisis.economic && (
-                  <div>
-                    <strong>Economic Preference:</strong> {detail_analisis.economic}
-                  </div>
-                )}
-                {detail_analisis.age_factor && (
-                  <div>
-                    <strong>Age Factor:</strong> {detail_analisis.age_factor}
-                  </div>
-                )}
-              </div>
+            <div className="bg-gray-50 p-4 rounded-lg mb-6">
+              <h4 className="font-semibold text-gray-800 mb-2">📊 Detailed Analysis</h4>
+              <p className="text-gray-700">{detail_analisis}</p>
             </div>
           )}
-        </div>
 
-        {/* Action Buttons */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">What would you like to do next?</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Action Buttons */}
+          <div className="text-center space-y-3">
             <button
               onClick={handleRetakeQuiz}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center"
+              className="w-full md:w-auto px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
               🔄 Retake Quiz
             </button>
             <button
-              onClick={handleNewRegistration}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-center"
-            >
-              👤 New Registration
-            </button>
-            <button
-              onClick={handleViewData}
-              className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-center"
-            >
-              📊 View Data
-            </button>
-            <button
               onClick={handleGoHome}
-              className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-center"
+              className="w-full md:w-auto px-8 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium ml-0 md:ml-3"
             >
-              🏠 Go to Home
+              🏠 Back to Home
             </button>
+            {localStorage.getItem('userData') && (
+              <button
+                onClick={handleViewData}
+                className="w-full md:w-auto px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium ml-0 md:ml-3"
+              >
+                📋 View All Data
+              </button>
+            )}
           </div>
         </div>
       </div>
