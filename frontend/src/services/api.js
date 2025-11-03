@@ -1,8 +1,14 @@
-// Get API URL from localStorage or use default
+// Get API URL from environment variable or use default
 const getApiUrl = () => {
+  // Prioritas: Environment Variable > localStorage > Default
+  if (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
   if (typeof window !== 'undefined') {
     return localStorage.getItem('apiUrl') || 'http://localhost:8000';
   }
+  
   return 'http://localhost:8000';
 };
 
