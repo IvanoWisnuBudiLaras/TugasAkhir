@@ -1,0 +1,27 @@
+﻿{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@smoethievibes/backend/*": ["./apps/backend/src/*"],
+      "@smoethievibes/frontend/*": ["./apps/frontend/src/*"],
+      "@smoethievibes/types/*": ["./packages/types/src/*"],
+      "@smoethievibes/ui/*": ["./packages/ui/src/*"],
+      "@smoethievibes/utils/*": ["./packages/utils/src/*"]
+    },
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    "incremental": true
+  },
+  "exclude": ["node_modules", "dist", ".next", "build"]
+}

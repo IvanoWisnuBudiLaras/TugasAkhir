@@ -1,0 +1,13 @@
+packages:
+  - apps/*
+  - packages/*
+
+onlyBuiltDependencies:
+  - '@apollo/protobufjs'
+  - '@nestjs/core'
+  - '@prisma/client'
+  - '@prisma/engines'
+  - bcrypt
+  - prisma
+  - sharp
+  - unrs-resolver

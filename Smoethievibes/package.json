@@ -1,0 +1,35 @@
+﻿{
+  "name": "smoethievibes-root",
+  "private": true,
+  "version": "1.0.0",
+  "packageManager": "pnpm@10.20.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r --parallel build",
+    "start": "pnpm -r --parallel start",
+    "lint": "pnpm -r --parallel lint",
+    "test": "pnpm -r --parallel test",
+    "type-check": "pnpm -r --parallel type-check",
+    "clean": "pnpm -r --parallel clean",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "prisma:generate": "pnpm --filter backend prisma:generate",
+    "prisma:migrate": "pnpm --filter backend prisma:migrate",
+    "prisma:studio": "pnpm --filter backend prisma:studio"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3",
+    "prettier": "^3.2.4",
+    "eslint": "^8.56.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
