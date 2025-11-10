@@ -1,10 +1,10 @@
 ﻿import { NestFactory } from "@nestjs/core";
-import { AppModule } from "./app.module";
+import { AppModule } from "./app.module.js";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;
   await app.listen(port);
-  console.log("ðŸš€ Backend running on http://localhost:" + port);
+  console.log("🚀 Backend running on http://localhost:" + port);
 }
 bootstrap();
