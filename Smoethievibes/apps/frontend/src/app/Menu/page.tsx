@@ -1,8 +1,17 @@
+
+import { Button } from '@smoethievibes/ui';
+
 export default function MenuPage() {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Menu</h1>
-      <p className="text-gray-600">Menu page coming soon...</p>
+    <>
+    <div className='bg-blue-500 m-4 p-2 border-2 border-black rounded-md flex items-center content-center wrap'>
+      <p className='text-white text-2xl font-bold'>Menu</p>
     </div>
+    <div className="p-4 space-x-4">
+      <Button variant="default">Default Button</Button>
+      <Button variant="outline">Outline Button</Button>
+      <Button variant="secondary">Secondary Button</Button>
+    </div>
+    </>
   )
 }
