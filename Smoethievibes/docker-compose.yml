@@ -1,4 +1,4 @@
-﻿version: "3.9"
+﻿﻿﻿version: "3.9"
 
 services:
   db:
@@ -33,14 +33,14 @@ services:
     build:
       context: ./apps/backend
       dockerfile: Dockerfile
-      target: production
+      target: development
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-smoethievibes}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-your-secret-key}
@@ -48,24 +48,28 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - ./apps/backend/src:/app/src
-      - ./apps/backend/prisma:/app/prisma
-    command: pnpm start:prod
+      - ./apps/backend:/app
+      - /app/node_modules
+    command: sh -c "pnpm install && npx prisma generate && pnpm start:dev"
 
   frontend:
     build:
       context: ./apps/frontend
       dockerfile: Dockerfile
-      target: production
+      target: development
     depends_on:
       - backend
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
       PORT: 3000
     ports:
       - "3000:3000"
-    command: pnpm start
+    volumes:
+      - ./apps/frontend:/app
+      - /app/node_modules
+      - /app/.next
+    command: sh -c "pnpm install && pnpm dev"
 
 volumes:
   db_data:

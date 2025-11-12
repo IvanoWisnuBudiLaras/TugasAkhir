@@ -1,4 +1,4 @@
-﻿FROM node:20-alpine AS base
+﻿﻿﻿﻿FROM node:20-alpine AS base
 
 # Install pnpm
 RUN npm install -g pnpm@10.20.0
@@ -18,9 +18,25 @@ COPY . .
 # Build the application
 RUN pnpm build
 
+# Generate Prisma Client
+RUN pnpm prisma generate
+
+# Development stage
+FROM base AS development
+
+WORKDIR /app
+
+EXPOSE 3001
+
+CMD ["pnpm", "start:dev"]
+
 # Production stage
 FROM node:20-alpine AS production
 RUN npm install -g pnpm@10.20.0
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S smoethie -u 1001
 
 WORKDIR /app
 
@@ -30,8 +46,14 @@ COPY package.json pnpm-lock.yaml* ./
 # Install production dependencies only
 RUN pnpm install --prod --frozen-lockfile
 
-# Copy built application
+# Copy built application and Prisma files
 COPY --from=base /app/dist ./dist
+COPY --from=base /app/prisma ./prisma
+COPY --from=base /app/node_modules/.prisma ./node_modules/.prisma
+
+# Change ownership to non-root user
+RUN chown -R smoethie:nodejs /app
+USER smoethie
 
 EXPOSE 3001
 

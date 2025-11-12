@@ -1,7 +1,5 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
-
-@theme{
-    --brown: #242434;
-}
+/* stylelint-disable */
+/* prettier-ignore */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
