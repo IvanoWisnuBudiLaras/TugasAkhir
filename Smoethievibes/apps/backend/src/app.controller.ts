@@ -27,7 +27,7 @@ export class AppController {
           database: 'disconnected',
           api: 'running'
         },
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
