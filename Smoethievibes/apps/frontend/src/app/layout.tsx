@@ -3,7 +3,7 @@ import { Nav } from '@/src/components/Nav';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="id">
       <body>
         <Nav />
         {children}
