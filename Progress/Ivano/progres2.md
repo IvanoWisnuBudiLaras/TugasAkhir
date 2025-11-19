@@ -1,0 +1,9 @@
+- Perbaikan data di prisma
+- Penambahan data di prisma
+- Penambahan user resolver
+- Penambahan user controller
+- Penambahan user module
+- Penambahan user service
+- Penambahan user model
+- Penambahan user dto
+- Penambahan user dto update
