@@ -1,11 +1,24 @@
-﻿import '../styles/globals.css';
-import { Nav } from '@/src/components/Nav';
+﻿"use client";
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+import "@/src/styles/globals.css";
+import { usePathname } from "next/navigation";
+import Nav from "@/src/components/Nav";
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const pathname = usePathname();
+
+  const hideNav =
+    pathname.startsWith("/Login") ||
+    pathname.startsWith("/SignUp");
+
   return (
     <html lang="en">
       <body>
-        <Nav />
+        {!hideNav && <Nav />}
         {children}
       </body>
     </html>
