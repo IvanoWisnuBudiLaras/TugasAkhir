@@ -16,7 +16,7 @@ export default function RootLayout({
     pathname.startsWith("/SignUp");
 
   return (
-    <html lang="en">
+    <html lang="id">
       <body>
         {!hideNav && <Nav />}
         {children}
