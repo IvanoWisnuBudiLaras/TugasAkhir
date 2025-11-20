@@ -3,6 +3,7 @@
 import "@/src/styles/globals.css";
 import { usePathname } from "next/navigation";
 import Nav from "@/src/components/Nav";
+import Footer from "@/src/components/footer";
 
 export default function RootLayout({
   children,
@@ -12,14 +13,14 @@ export default function RootLayout({
   const pathname = usePathname();
 
   const hideNav =
-    pathname.startsWith("/Login") ||
-    pathname.startsWith("/SignUp");
+    pathname.startsWith("/Auth");
 
   return (
     <html lang="id">
       <body>
         {!hideNav && <Nav />}
         {children}
+        <Footer />
       </body>
     </html>
   );
