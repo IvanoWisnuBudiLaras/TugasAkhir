@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 
 export function Sectionone() {
@@ -8,8 +10,8 @@ export function Sectionone() {
           <Image
             src="/Profile/Roti Bakar.png"
             alt="Profile"
-            width={200}
-            height={200}
+            width={96}
+            height={96}
             className="w-full h-full object-cover"
           />
         </div>
@@ -22,9 +24,7 @@ export function Sectionone() {
 export function Sectiontree() {
   return (
     <>
-   
-      <div className="w-full p-8 border border-green-400 rounded-3xl shadow-sm flex flex-col gap-4">
-
+      <div className="w-full p-8 border border-green-400 rounded-3xl shadow-sm flex flex-col gap-4 bg-white">
         <h2 className="text-lg font-semibold text-green-700 mb-2">
           Informasi Akun
         </h2>
@@ -59,7 +59,7 @@ export function Sectiontree() {
 export function Sectiontwo() {
   return (
     <>
-      <div className="w-full p-6 border border-gray-400 rounded-3xl flex flex-col gap-3">
+      <div className="w-full p-6 border border-gray-300 rounded-3xl flex flex-col gap-3 bg-white">
         <button className="bg-green-400 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-green-500 transition">
           History
         </button>
@@ -86,18 +86,15 @@ export function Sectiontwo() {
 
 export default function ProfilePage() {
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center py-10">
+    <div className="min-h-screen bg-white flex flex-col items-center pt-32 pb-10">
+      {/* Memberi jarak agar tidak tabrakan dengan navbar */}
 
       <Sectionone />
 
       <div className="w-full max-w-lg mx-auto space-y-8">
-
         <Sectiontree />
-
         <Sectiontwo />
-
       </div>
-      
     </div>
   );
 }

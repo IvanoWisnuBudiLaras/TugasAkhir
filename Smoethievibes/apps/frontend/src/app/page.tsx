@@ -5,9 +5,10 @@ const menuItems = [
   { nama: "Strawberry Matcha Yogurt", img: "/Landing/strawberry matcha yogurt.jpg" },
   { nama: "Dimsum Mentai", img: "/Landing/placeholder.png" },
 ];
+
 const cafePlace = [
   { nama: "Kasir", img: "/Landing/kasir1.jpg" },
-]
+];
 
 export default function Home() {
   return (
