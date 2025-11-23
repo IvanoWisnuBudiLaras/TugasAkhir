@@ -1,11 +1,21 @@
-﻿import Image from "next/image";
+﻿﻿import Image from "next/image";
+
+const menuItems = [
+  { nama: "Roasted Chicken Up", img: "/Landing/Roasted chiken Up with mashed potato.png" },
+  { nama: "Strawberry Matcha Yogurt", img: "/Landing/strawberry matcha yogurt.jpg" },
+  { nama: "Dimsum Mentai", img: "/Landing/placeholder.png" },
+];
+
+const cafePlace = [
+  { nama: "Kasir", img: "/Landing/kasir1.jpg" },
+];
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-white">
 
-      <section className="w-full flex justify-center py-16">
-        <div className="bg-[#ADB67A] text-white text-center px-16 py-12 rounded-2xl">
+      <section className="w-full flex justify-center">
+        <div className="bg-[#ADB67A] text-white text-center rounded-2xl">
           <h1 className="text-4xl font-bold leading-relaxed">
             Welcome <br /> Smoethievibes
           </h1>
@@ -15,151 +25,57 @@ export default function Home() {
       <section className="w-full px-10 relative py-10">
 
         <div className="absolute left-0 top-10 w-40 h-56 bg-[#C79E8A] rounded-2xl blur-sm opacity-60"></div>
-
         <div className="absolute right-0 top-10 w-40 h-56 bg-[#C99479] rounded-2xl blur-sm opacity-60"></div>
 
         <div className="relative grid grid-cols-1 md:grid-cols-3 gap-10 z-10">
+          {cafePlace.map((item, i) => (
+            <div className="text-center px-4" key={i}>
+              <h3 className="font-bold text-lg mb-2">Lorem Ipsum</h3>
+              <p className="text-sm text-gray-600">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+              </p>
 
-          <div className="text-center px-4">
-            <h3 className="font-bold text-lg mb-2">Lorem Ipsum</h3>
-            <p className="text-sm text-gray-600">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-            </p>
-            <div className="w-32 h-32 bg-gray-300 mx-auto mt-3 rounded-md"></div>
-          </div>
-
-          <div className="text-center px-4">
-            <h3 className="font-bold text-lg mb-2">Lorem Ipsum</h3>
-            <p className="text-sm text-gray-600">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-            </p>
-            <div className="w-32 h-32 bg-gray-300 mx-auto mt-3 rounded-md"></div>
-          </div>
-
-          <div className="text-center px-4">
-            <h3 className="font-bold text-lg mb-2">Lorem Ipsum</h3>
-            <p className="text-sm text-gray-600">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-            </p>
-            <div className="w-32 h-32 bg-gray-300 mx-auto mt-3 rounded-md"></div>
-          </div>
-
+              <div className="relative w-60 h-40 mx-auto mt-3 rounded-md bg-gray-300 overflow-hidden">
+                <Image
+                  src={item.img}
+                  alt={item.nama}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
-      <section className="w-full bg-[#7E845A] py-12">
-        <h2 className="text-center text-3xl text-white font-bold mb-8">
-        Popular Menu
-        </h2>
-        
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 justify-items-center">
-          
-          <div className="text-center">
-            <div className="relative w-32 h-40 bg-[#C56767] rounded-md mx-auto">
-              <Image 
-              src="/Landing/Crispy Chiken Up.png" 
-              alt="Crispy Chicken Up"
-              width={128}
-              height={160}
-              className="object-cover"
-              />
-              <p className="text-white text-sm mt-3">Crispy Chicken Up</p>
-            </div>
-          </div>
-          
-          <div className="text-center">
-            <div className="relative w-32 h-40 bg-[#C56767] rounded-md mx-auto">
-              <Image 
-              src="/Landing/Roasted chiken Up with mashed potato.png" 
-              alt="Roasted Chicken Up"
-              width={128}
-              height={160}
-              className="object-cover"
-              />
-              <p className="text-white text-sm mt-2">Roasted Chicken Up</p>
-            </div>
-          </div>
-
-          <div className="text-center">
-            <div className="relative w-32 h-40 bg-[#C56767] rounded-md mx-auto">
-              <Image
-              src="/Landing/placeholder.png" 
-              alt="Tenderloin Steak and Broccoli" 
-              width={128}
-              height={160}
-              className="object-cover"
-              />
-            </div>
-            <p className="text-white text-sm mt-2">Tenderloin Steak and Broccoli</p>
-          </div>
-
-          <div className="text-center">
-            <div className="relative w-32 h-40 bg-[#C56767] rounded-md mx-auto">
-              <Image
-              src="/Landing/strawberry matcha yogurt.jpg" 
-              alt="Strawberry Matcha Yogurt" 
-              width={128}
-              height={160}
-              className="object-cover"
-              />
-            </div>
-            <p className="text-white text-sm mt-2">Strawberry Matcha Yogurt</p>
-          </div>
-
-          <div className="text-center">
-            <div className="relative w-32 h-40 bg-[#C56767] rounded-md mx-auto">
-              <Image
-              src="/Landing/placeholder.png" 
-              alt="Pineberry Leacy" 
-              width={128}
-              height={160}
-              className="object-cover"
-              />
-            </div>
-            <p className="text-white text-sm mt-2">Pineberry Leacy</p>
-          </div>
-
-          <div className="text-center">
-            <div className="relative w-32 h-40 bg-[#C56767] rounded-md mx-auto">
-              <Image
-              src="/Landing/placeholder.png" 
-              alt="Avonana Blend" 
-              width={128}
-              height={160}
-              className="object-cover"
-              />
-            </div>
-            <p className="text-white text-sm mt-2">Avonana Blend</p>
-          </div>
-
-          <div className="text-center">
-            <div className="relative w-32 h-40 bg-[#C56767] rounded-md mx-auto">
-              <Image
-              src="/Landing/placeholder.png" 
-              alt="Dimsum Mentai" 
-              width={128}
-              height={160}
-              className="object-cover"
-              />
-            </div>
-            <p className="text-white text-sm mt-2">Dimsum Mentai</p>
-          </div>
-
-          <div className="text-center">
-            <div className="relative w-32 h-40 bg-[#C56767] rounded-md mx-auto">
-              <Image
-              src="/Landing/placeholder.png" 
-              alt="Mix Platter" 
-              width={128}
-              height={160}
-              className="object-cover"
-              />
-            </div>
-            <p className="text-white text-sm mt-2">Mix Platter</p>
-          </div>
-
-        </div>
-      </section>
+      <MenuFav />
     </main>
+  );
+}
+
+export function MenuFav() {
+  return (
+    <section className="w-full bg-[#7E845A] py-12">
+      <h2 className="text-center text-3xl text-white font-bold mb-8">
+        Popular Menu
+      </h2>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-6 justify-items-center">
+        {menuItems.map((item, idx) => (
+          <div className="text-center" key={idx}>
+            <div className="relative w-32 h-40 bg-[#C56767] rounded-md mx-auto overflow-hidden">
+              <Image
+                src={item.img}
+                alt={item.nama}
+                fill
+                className="object-cover"
+              />
+            </div>
+
+            <p className="text-white text-sm mt-2">{item.nama}</p>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
