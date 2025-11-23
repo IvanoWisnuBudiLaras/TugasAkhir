@@ -8,25 +8,23 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DATABASE_URL")
 }
 
 model User {
-  id        String   @id @default(cuid()) // ID unik user
-  email     String   @unique // Email untuk login
-  password  String // Password terenkripsi
-  phone     String // Nomor HP untuk WhatsApp
-  address   String? // Alamat opsional untuk delivery
-  avatar    String? // Foto profil opsional
-  name      String // Nama lengkap user
-  role      UserRole @default(USER) // Role: USER atau ADMIN
-  isActive  Boolean  @default(true) // Status aktif user
-  lastLogin DateTime? // Waktu login terakhir
-  createdAt DateTime @default(now()) // Waktu registrasi
-  updatedAt DateTime @updatedAt // Waktu update terakhir
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  phone     String
+  address   String?
+  avatar    String?
+  name      String
+  role      UserRole @default(CUSTOMER)
+  isActive  Boolean  @default(true)
+  lastLogin DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  orders Order[] // Relasi ke pesanan
+  orders Order[]
 
   @@map("users")
 }
@@ -96,20 +94,21 @@ model OrderItem {
 
 // Role user: ADMIN atau USER biasa
 enum UserRole {
-  USER   // User biasa
-  KASIR   // Kasir coffee shop
-  MANAGER  // Manager coffee shop
+  ADMIN
+  CUSTOMER
+  STAFF
+  MANAGER
 }
 
 // Status order: dari pending sampai selesai
 enum OrderStatus {
-  PENDING         // Menunggu pembayaran
-  WAITING_PAYMENT // Menunggu konfirmasi bayar
-  CONFIRMED       // Pembayaran dikonfirmasi
-  PROCESSING      // Sedang dibuat
-  READY          // Pesanan siap diambil
-  COMPLETED      // Selesai
-  CANCELLED      // Dibatalkan
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
 }
 
 // Tipe order: dibawa, makan di tempat, atau delivery
