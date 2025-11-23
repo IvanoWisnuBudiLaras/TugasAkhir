@@ -1,24 +1,28 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = "postgresql://postgres:postgres@localhost:5432/smoethievibes"
+  provider  = "postgresql"
 }
 
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
   password  String
-  name      String?
-  role      String   @default("USER") // USER or ADMIN
+  phone     String
+  address   String?
+  avatar    String?
+  name      String
+  role      UserRole @default(CUSTOMER)
+  isActive  Boolean  @default(true)
+  lastLogin DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
 
   orders Order[]
 
@@ -26,58 +30,106 @@ model User {
 }
 
 model Category {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  description String? 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id          String    @id @default(cuid()) // ID unik kategori
+  name        String    @unique // Nama kategori (unique)
+  description String? // Deskripsi kategori (opsional)
+  createdAt   DateTime  @default(now()) // Waktu pembuatan
+  updatedAt   DateTime  @updatedAt // Waktu update terakhir
 
-  products Product[]
+  products Product[] // Relasi ke produk
 
   @@map("categories")
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  price       Float
-  image       String?
-  stock       Int      @default(0)
-  categoryId  String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id          String   @id @default(cuid()) // ID unik produk
+  name        String // Nama produk
+  description String? // Deskripsi produk (opsional)
+  price       Float // Harga default (ukuran M)
+  image       String? // Gambar produk (opsional)
+  stock       Int      @default(0) // Stok tersedia
+  categoryId  String // ID kategori
+  createdAt   DateTime @default(now()) // Waktu pembuatan
+  updatedAt   DateTime @updatedAt // Waktu update terakhir
 
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  orderItems OrderItem[]
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade) // Relasi ke kategori
+  orderItems OrderItem[] // Relasi ke item pesanan
 
   @@map("products")
 }
 
 model Order {
-  id         String   @id @default(cuid())
-  userId     String
-  status     String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, CANCELLED
-  total      Float
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id         String   @id @default(cuid()) // ID unik order
+  userId     String // ID user pemesan
+  status     OrderStatus @default(PENDING) // Status order (enum OrderStatus)
+  total      Float // Total harga pesanan
+  orderType  OrderType @default(TAKEAWAY) // Tipe order (enum OrderType)
+  queueNumber Int? // Nomor antrian (opsional)
+  tableNumber Int? // Nomor meja (opsional untuk dine-in)
+  notes      String? // Catatan khusus (opsional)
+  createdAt  DateTime @default(now()) // Waktu pemesanan
+  updatedAt  DateTime @updatedAt // Waktu update terakhir
 
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orderItems OrderItem[]
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade) // Relasi ke user
+  orderItems OrderItem[] // Relasi ke item pesanan
 
   @@map("orders")
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  productId String
-  quantity  Int
-  price     Float
+  id        String  @id @default(cuid()) // ID unik item order
+  orderId   String // ID order
+  productId String // ID produk
+  quantity  Int // Jumlah item yang dipesan
+  price     Float // Harga per item saat dipesan
 
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade) // Relasi ke order
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade) // Relasi ke produk
 
-  @@unique([orderId, productId])
+  @@unique([orderId, productId]) // Unique constraint: 1 produk per order
   @@map("order_items")
 }
+
+// === ENUMS === //
+
+// Role user: ADMIN atau USER biasa
+enum UserRole {
+  ADMIN
+  CUSTOMER
+  STAFF
+  MANAGER
+}
+
+// Status order: dari pending sampai selesai
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+// Tipe order: dibawa, makan di tempat, atau delivery
+enum OrderType {
+  TAKEAWAY  // Bawa pulang
+  DINE_IN   // Makan di tempat
+  DELIVERY  // Antar ke rumah
+}
+
+// Tipe produk: minuman, makanan, dessert
+enum ProductType {
+  DRINK    // Minuman
+  FOOD     // Makanan
+  SNACK    // Camilan
+}
+
+// Metode pembayaran: WhatsApp, tunai, COD
+enum PaymentMethod {
+  WHATSAPP  // Transfer via WhatsApp
+  CASH      // Bayar tunai
+  COD       // Cash on delivery
+}
+
+// === END ENUMS === //

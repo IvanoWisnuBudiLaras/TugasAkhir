@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 
 export function Sectionone() {
@@ -8,8 +10,8 @@ export function Sectionone() {
           <Image
             src="/Profile/Profil.jpeg"
             alt="Profile"
-            width={200}
-            height={200}
+            width={96}
+            height={96}
             className="w-full h-full object-cover"
           />
         </div>
@@ -22,9 +24,8 @@ export function Sectionone() {
 export function Sectiontree() {
   return (
     <>
-   <div className="w-full p-8 border border-green-400 rounded-3xl shadow-sm flex flex-col gap-4">
-
-        <h2 className="text-lg font-semibold text-brown-800 mb-2">
+      <div className="w-full p-8 border border-green-400 rounded-3xl shadow-sm flex flex-col gap-4 bg-white">
+        <h2 className="text-lg font-semibold text-green-700 mb-2">
           Informasi Akun
         </h2>
 
@@ -49,9 +50,7 @@ export function Sectiontree() {
             <p className="font-medium text-brown-800">JJunnd</p>
           </div>
         </div>
-
       </div>
-
     </>
   );
 }
@@ -59,7 +58,7 @@ export function Sectiontree() {
 export function Sectiontwo() {
   return (
     <>
-      <div className="w-full p-6 border border-gray-400 rounded-3xl flex flex-col gap-3">
+      <div className="w-full p-6 border border-gray-300 rounded-3xl flex flex-col gap-3 bg-white">
         <button className="bg-green-400 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-green-500 transition">
           History
         </button>
@@ -67,70 +66,48 @@ export function Sectiontwo() {
         <button className="bg-green-400 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-green-500 transition">
           Customize 
         </button>
-
       </div>
     </>
   );
 }
 
 export function Sectionfourth() {
-  return (
-    <>
-    
-    </>
-  );
+  return <></>;
 }
-
-
 
 export default function ProfilePage() {
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center py-10">
-
+    <div className="min-h-screen bg-white flex flex-col items-center pt-32 pb-10">
       <Sectionone />
 
       <div className="w-full max-w-lg mx-auto space-y-8">
-
         <Sectiontree />
-        
-      
         <Sectiontwo />
-
-
         <Sectionfourth />
+
         <div className="w-full p-8 border border-green-400 rounded-3xl shadow-sm flex flex-col gap-4">
-
-         <div className="space-y-4">
-          <div>
-            <p className="text-brown-800 text-sm"></p>
+          <div className="space-y-4">
+            <div>
+              <p className="text-brown-800 text-sm"></p>
+            </div>
+            <div>
+              <p className="text-brown-800 text-sm">Email:</p>
+            </div>
+            <div>
+              <p className="text-brown-800 text-sm">Password:</p>
+            </div>
+            <div>
+              <p className="text-brown-800 text-sm">No.Telepon:</p>
+            </div>
+            <div>
+              <p className="text-brown-800 text-sm">Nama:</p>
+            </div>
+            <div>
+              <p className="text-brown-800 text-sm">Username:</p>
+            </div>
           </div>
-
-          <div>
-            <p className="text-brown-800 text-sm">Email:</p>
-          </div>
-
-          <div>
-            <p className="text-brown-800 text-sm">Password:</p>
-          </div>
-
-          <div>
-            <p className="text-brown-800 text-sm">No.Telepon:</p>
-          </div>
-          
-           <div>
-            <p className="text-brown-800 text-sm">Nama:</p>
-          </div>
-
-           <div>
-            <p className="text-brown-800 text-sm">Username:</p>
-          </div>
-        
+        </div>
       </div>
-
-      </div>
-
-      </div>
-      
     </div>
   );
 }

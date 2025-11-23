@@ -16,6 +16,15 @@ export class UserService {
   }
 
   async create(userData: any) {
+    // Cek duplikasi email sebelum membuat user
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: userData.email },
+    });
+
+    if (existingUser) {
+      throw new Error('Email sudah terdaftar. Silakan gunakan email lain.');
+    }
+
     return this.prisma.user.create({
       data: userData,
     });

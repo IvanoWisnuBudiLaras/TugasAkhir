@@ -1,0 +1,9 @@
+export enum ProductCategory {
+  SMOOTHIE = 'SMOOTHIE',
+  JUICE = 'JUICE',
+  MILKSHAKE = 'MILKSHAKE',
+  BOWL = 'BOWL',
+  SNACK = 'SNACK',
+  DESSERT = 'DESSERT',
+  BEVERAGE = 'BEVERAGE',
+}
