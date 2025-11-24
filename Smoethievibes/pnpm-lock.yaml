@@ -68,11 +68,6 @@ importers:
       class-validator:
         specifier: ^0.14.1
         version: 0.14.2
-<<<<<<< HEAD
-      express-rate-limit:
-        specifier: ^7.1.5
-        version: 7.5.1(express@4.21.2)
-=======
       exceljs:
         specifier: ^4.4.0
         version: 4.4.0
@@ -82,16 +77,12 @@ importers:
       express-rate-limit:
         specifier: ^7.1.5
         version: 7.5.1(express@4.17.1)
->>>>>>> 7b1ea50a02fa5b754fc9724cc21cfc5dc5d3d970
       graphql:
         specifier: ^16.12.0
         version: 16.12.0
-<<<<<<< HEAD
-=======
       graphql-subscriptions:
         specifier: ^3.0.0
         version: 3.0.0(graphql@16.12.0)
->>>>>>> 7b1ea50a02fa5b754fc9724cc21cfc5dc5d3d970
       helmet:
         specifier: ^7.1.0
         version: 7.2.0
@@ -2777,13 +2768,10 @@ packages:
     peerDependencies:
       express: '>= 4.11'
 
-<<<<<<< HEAD
-=======
   express@4.17.1:
     resolution: {integrity: sha512-mHJ9O79RqluphRrcw2X/GTh3k9tVv8YcoyY4Kkh4WDMUYKRZUq0h1o0w2rrrxBqM7VoeUVqgb27xlEMXTnYt4g==}
     engines: {node: '>= 0.10.0'}
 
->>>>>>> 7b1ea50a02fa5b754fc9724cc21cfc5dc5d3d970
   express@4.21.2:
     resolution: {integrity: sha512-28HqgMZAmih1Czt9ny7qr6ek2qddF4FclbMzwhCREB6OFfH+rXAnuNCwo1/wFvrtbgsQDb4kSbX9de9lFbrXnA==}
     engines: {node: '>= 0.10.0'}
@@ -3110,12 +3098,6 @@ packages:
   helmet@7.2.0:
     resolution: {integrity: sha512-ZRiwvN089JfMXokizgqEPXsl2Guk094yExfoDXR0cBYWxtBbaSww/w+vT4WEJsBW2iTUi1GgZ6swmoug3Oy4Xw==}
     engines: {node: '>=16.0.0'}
-<<<<<<< HEAD
-
-  highlight.js@10.7.3:
-    resolution: {integrity: sha512-tzcUFauisWKNHaRkN4Wjl/ZA07gENAjFl3J/c480dprkGTg5EQstgaNFqBfUqCq54kZRIEcreTsAgF/m2quD7A==}
-=======
->>>>>>> 7b1ea50a02fa5b754fc9724cc21cfc5dc5d3d970
 
   hoist-non-react-statics@3.3.2:
     resolution: {integrity: sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw==}
@@ -8053,7 +8035,7 @@ snapshots:
       eslint: 8.57.1
       eslint-import-resolver-node: 0.3.9
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1))(eslint@8.57.1)
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1))(eslint@8.57.1))(eslint@8.57.1)
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@8.57.1)
       eslint-plugin-jsx-a11y: 6.10.2(eslint@8.57.1)
       eslint-plugin-react: 7.37.5(eslint@8.57.1)
       eslint-plugin-react-hooks: 5.2.0(eslint@8.57.1)
@@ -8087,7 +8069,7 @@ snapshots:
       tinyglobby: 0.2.15
       unrs-resolver: 1.11.1
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1))(eslint@8.57.1))(eslint@8.57.1)
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@8.57.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -8102,7 +8084,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1))(eslint@8.57.1))(eslint@8.57.1):
+  eslint-plugin-import@2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@8.57.1):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
@@ -8293,11 +8275,6 @@ snapshots:
       jest-message-util: 29.7.0
       jest-util: 29.7.0
 
-<<<<<<< HEAD
-  express-rate-limit@7.5.1(express@4.21.2):
-    dependencies:
-      express: 4.21.2
-=======
   express-rate-limit@7.5.1(express@4.17.1):
     dependencies:
       express: 4.17.1
@@ -8336,7 +8313,6 @@ snapshots:
       vary: 1.1.2
     transitivePeerDependencies:
       - supports-color
->>>>>>> 7b1ea50a02fa5b754fc9724cc21cfc5dc5d3d970
 
   express@4.21.2:
     dependencies:
@@ -8725,11 +8701,6 @@ snapshots:
       function-bind: 1.1.2
 
   helmet@7.2.0: {}
-<<<<<<< HEAD
-
-  highlight.js@10.7.3: {}
-=======
->>>>>>> 7b1ea50a02fa5b754fc9724cc21cfc5dc5d3d970
 
   hoist-non-react-statics@3.3.2:
     dependencies:

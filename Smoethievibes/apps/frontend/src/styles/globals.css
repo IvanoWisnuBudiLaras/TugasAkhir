@@ -2,7 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-<<<<<<< HEAD
+
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -32,7 +33,7 @@
 .animate-fadeInSlow {
   animation: fadeInSlow 0.9s ease-out;
 }
-=======
+
 .menu-item {
   @apply flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-black/5 transition text-neutral-700 font-medium;
 }
@@ -154,4 +155,4 @@
     @apply bg-background text-foreground;
   }
 }
->>>>>>> 7b1ea50a02fa5b754fc9724cc21cfc5dc5d3d970
+
