@@ -43,38 +43,63 @@ export default function Nav() {
             <li className="hover:text-black transition"><Link href="/Profile">Profile</Link></li>
           </ul>
 
-          {/* CTA Button */}
+          {/* CTA Button (Sign In) */}
           <div className="flex items-center">
-            <Link href="/Auth">
-              <button
-                className="
-                  bg-black text-white font-semibold
-                  px-6 py-2 rounded-full
-                  hover:bg-black/80 transition
-                "
-              >
-                Sign In
-              </button>
+            <Link
+              href="/Auth"
+              className="bg-black text-white font-semibold px-6 py-2 rounded-full hover:bg-black/80 transition inline-block text-center"
+            >
+              Sign In
             </Link>
           </div>
         </nav>
       </header>
 
-      {/* MOBILE NAV */}
-      <nav
-        className="
-          md:hidden
-          fixed bottom-4 left-1/2 -translate-x-1/2
-          w-[90%]
-          bg-white/80 backdrop-blur-xl
-          border border-black/10
-          rounded-3xl
-          px-6 py-3
-          shadow-lg
-          flex justify-between
-          z-50
-        "
-      >
+      {/* MOBILE TOP NAV (LOGO + SIGN UP) */}
+      <header className="
+        md:hidden
+        fixed top-0 left-0 w-full z-50
+        bg-white/80 backdrop-blur-xl
+        border-b border-black/10
+        px-5 py-3
+        flex items-center justify-between
+      ">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2">
+          <Image
+            src="/logo2.png"
+            alt="Logo"
+            width={34}
+            height={34}
+            className="rounded-full border border-black/10"
+          />
+          <span className="text-[17px] font-semibold text-black">
+            Smoethie Vibe
+          </span>
+        </Link>
+
+        {/* Sign Up */}
+        <Link
+          href="/Auth"
+          className="bg-black text-white text-sm font-semibold px-4 py-1.5 rounded-full hover:bg-black/80 transition inline-block text-center"
+        >
+          Sign Up
+        </Link>
+      </header>
+
+      {/* MOBILE BOTTOM NAV */}
+      <nav className="
+        md:hidden
+        fixed bottom-4 left-1/2 -translate-x-1/2
+        w-[90%]
+        bg-white/80 backdrop-blur-xl
+        border border-black/10
+        rounded-3xl
+        px-6 py-3
+        shadow-lg
+        flex justify-between
+        z-50
+      ">
         <NavItem href="/" label="Home" icon={<Home />} />
         <NavItem href="/Menu" label="Menu" icon={<Menu />} />
         <NavItem href="/Contact" label="Contact" icon={<MessageSquare />} />
@@ -102,40 +127,33 @@ function NavItem({ href, label, icon }: NavItemProps) {
         font-medium
       "
     >
-      {/* ICON WRAPPER*/}
-      <div
-        className="
-          w-11 h-11
-          rounded-2xl
-          flex items-center justify-center
-          bg-white/70 backdrop-blur-md
-          border border-black/5
-          shadow-sm
-
-          group-hover:scale-110
-          group-hover:shadow-md
-          transition-all duration-300
-        "
-      >
-        <span
-          className="
-            text-black/70
-            group-hover:text-green-500
-            transition
-          "
-        >
+      {/* ICON WRAPPER */}
+      <div className="
+        w-11 h-11
+        rounded-2xl
+        flex items-center justify-center
+        bg-white/70 backdrop-blur-md
+        border border-black/5
+        shadow-sm
+        group-hover:scale-110
+        group-hover:shadow-md
+        transition-all duration-300
+      ">
+        <span className="
+          text-black/70
+          group-hover:text-green-500
+          transition
+        ">
           {icon}
         </span>
       </div>
 
       {/* LABEL */}
-      <span
-        className="
-          text-black/60
-          group-hover:text-green-500
-          transition
-        "
-      >
+      <span className="
+        text-black/60
+        group-hover:text-green-500
+        transition
+      ">
         {label}
       </span>
     </Link>

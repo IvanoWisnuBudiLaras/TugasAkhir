@@ -1,9 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(ConfigService)
+    private configService: ConfigService,
+  ) {}
 
   async findAll() {
     return this.prisma.user.findMany();
@@ -22,7 +27,7 @@ export class UserService {
     });
 
     if (existingUser) {
-      throw new Error('Email sudah terdaftar. Silakan gunakan email lain.');
+      throw new Error(this.configService.get('messages.errors.userExists'));
     }
 
     return this.prisma.user.create({

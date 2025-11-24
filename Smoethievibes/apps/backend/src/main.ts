@@ -1,31 +1,44 @@
-﻿﻿﻿import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule } from '@nestjs/swagger';
+﻿﻿﻿﻿﻿﻿﻿﻿import { NestFactory } from '@nestjs/core';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
-import { swaggerConfig } from './config/swagger.config';
-import { corsConfig } from './config/cors.config';
-import { validationConfig } from './config/validation.config';
 import helmet from 'helmet';
+import { ValidationPipe } from './common/pipes/validation.pipe';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  const configService = app.get(ConfigService);
 
   // Security
   app.use(helmet());
   
   // CORS
-  app.enableCors(corsConfig);
+  const corsOptions = configService.get('cors');
+  app.enableCors(corsOptions);
   
   // Global validation
-  app.useGlobalPipes(validationConfig);
+  app.useGlobalPipes(new ValidationPipe(configService));
   
   // Swagger documentation
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api', app, document);
+  const swaggerOptions = configService.get('swagger');
+  if (swaggerOptions?.enabled !== false) {
+    const config = new DocumentBuilder()
+      .setTitle(swaggerOptions?.title || 'Smoethievibes API')
+      .setDescription(swaggerOptions?.description || 'Smoethievibes API Documentation')
+      .setVersion(swaggerOptions?.version || '1.0')
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api', app, document);
+  }
 
   const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;
   await app.listen(port);
-  console.log(`🚀 Backend running on http://localhost:${port}`);
-  console.log(`📚 API Documentation: http://localhost:${port}/api`);
+  
+  const serverStarted = configService.get('messages.info.serverStarted').replace('${port}', port.toString());
+  const apiDocs = configService.get('messages.info.apiDocs').replace('${port}', port.toString());
+  
+  console.log(serverStarted);
+  console.log(apiDocs);
 }
 bootstrap();
