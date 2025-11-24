@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OrderSubscriptionService } from './order-subscription.service';
 
@@ -6,7 +7,9 @@ import { OrderSubscriptionService } from './order-subscription.service';
 export class OrderService {
   constructor(
     private prisma: PrismaService,
-    private subscriptionService: OrderSubscriptionService
+    private subscriptionService: OrderSubscriptionService,
+    @Inject(ConfigService)
+    private configService: ConfigService,
   ) {}
 
   async findAll() {
@@ -46,7 +49,7 @@ export class OrderService {
       const uniqueProductIds = [...new Set(productIds)];
       
       if (productIds.length !== uniqueProductIds.length) {
-        throw new Error('Produk yang sama tidak boleh muncul lebih dari sekali dalam satu order. Silahkan update jumlah produk tersebut jika ingin menambah quantity.');
+        throw new Error(this.configService.get('messages.errors.duplicateProductInOrderWithHelp'));
       }
 
       // Hitung total dari orderItems
@@ -59,7 +62,8 @@ export class OrderService {
             where: { id: item.productId },
           });
           if (!product) {
-            throw new Error(`Produk dengan ID ${item.productId} tidak ditemukan`);
+            const message = this.configService.get('messages.errors.productNotFoundInOrder');
+            throw new Error(message.replace('${productId}', item.productId));
           }
           total += product.price * item.quantity;
           item.price = product.price; // Set harga untuk disimpan
@@ -98,7 +102,7 @@ export class OrderService {
       const uniqueProductIds = [...new Set(productIds)];
       
       if (productIds.length !== uniqueProductIds.length) {
-        throw new Error('Produk yang sama tidak boleh muncul lebih dari sekali dalam satu order.');
+        throw new Error(this.configService.get('messages.errors.duplicateProductInOrder'));
       }
     }
 
@@ -162,7 +166,7 @@ export class OrderService {
       });
 
       if (!product) {
-        throw new Error('Produk tidak ditemukan');
+        throw new Error(this.configService.get('messages.errors.productNotFound'));
       }
 
       return this.prisma.orderItem.create({

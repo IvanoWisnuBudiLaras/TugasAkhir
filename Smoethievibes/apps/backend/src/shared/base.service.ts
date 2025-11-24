@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export abstract class BaseService {
-  constructor(protected readonly prisma: PrismaService) {}
+  constructor(
+    protected readonly prisma: PrismaService,
+    @Inject(ConfigService)
+    protected readonly configService: ConfigService,
+  ) {}
 
   protected async findByIdOrThrow<T>(
     model: string,
@@ -16,7 +21,8 @@ export abstract class BaseService {
     });
 
     if (!record) {
-      throw new NotFoundException(`${model} not found`);
+      const message = this.configService.get('messages.errors.notFound') || '${resource} not found';
+      throw new NotFoundException(message.replace('${resource}', model));
     }
 
     return record;
