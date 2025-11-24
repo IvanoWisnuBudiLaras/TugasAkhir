@@ -13,7 +13,8 @@ export default function RootLayout({
   const pathname = usePathname();
 
   const hideNav =
-    pathname.startsWith("/Auth");
+    pathname.startsWith("/Auth") ||
+    pathname.startsWith("/admin");
 
   return (
     <html lang="id">

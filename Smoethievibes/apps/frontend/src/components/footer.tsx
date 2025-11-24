@@ -1,9 +1,19 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Mail, Instagram, Youtube, Facebook } from "lucide-react";
 
 export default function Footer() {
+  const [mounted, setMounted] = useState(false);
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    setMounted(true); // render bagian icon & input hanya di client
+  }, []);
+
+  if (!mounted) return null; // sementara render kosong di server
+
   return (
     <footer className="w-full bg-[#f5f5f7] text-[#1d1d1f] border-t border-black/10 mt-20">
       <div className="max-w-7xl mx-auto px-6 py-12 grid md:grid-cols-5 gap-10">
@@ -19,9 +29,15 @@ export default function Footer() {
             <input
               type="email"
               placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2 rounded-lg border border-black/20 outline-none"
             />
-            <button className="px-4 py-2 bg-black text-white rounded-lg hover:bg-black/80">
+            <button
+              type="button"
+              className="px-4 py-2 bg-black text-white rounded-lg hover:bg-black/80"
+              onClick={() => alert(`Email submitted: ${email}`)}
+            >
               <Mail size={18} />
             </button>
           </div>
@@ -48,7 +64,6 @@ export default function Footer() {
         />
       </div>
 
-      {/* Copyright */}
       <div className="border-t border-black/10 py-4 text-center text-sm text-black/60">
         © 2025 Smoethie Vibe. All rights reserved.
       </div>
