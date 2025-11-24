@@ -12,42 +12,27 @@ const cafePlace = [
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-white">
-
-      <section className="w-full flex justify-center">
-        <div className="bg-[#ADB67A] text-white text-center rounded-2xl">
-          <h1 className="text-4xl font-bold leading-relaxed">
-            Welcome <br /> Smoethievibes
-          </h1>
-        </div>
-      </section>
-
-      <section className="w-full px-10 relative py-10">
-
-        <div className="absolute left-0 top-10 w-40 h-56 bg-[#C79E8A] rounded-2xl blur-sm opacity-60"></div>
-        <div className="absolute right-0 top-10 w-40 h-56 bg-[#C99479] rounded-2xl blur-sm opacity-60"></div>
-
-        <div className="relative grid grid-cols-1 md:grid-cols-3 gap-10 z-10">
-          {cafePlace.map((item, i) => (
-            <div className="text-center px-4" key={i}>
-              <h3 className="font-bold text-lg mb-2">Lorem Ipsum</h3>
-              <p className="text-sm text-gray-600">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-              </p>
-
-              <div className="relative w-60 h-40 mx-auto mt-3 rounded-md bg-gray-300 overflow-hidden">
-                <Image
-                  src={item.img}
-                  alt={item.nama}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
+  <main className="min-h-screen bg-white">
+    <section className="relative w-full h-[500px]">
+      <Image
+      src="/Landing/kasir1.jpg"
+      alt="Smoethie Vibes by Chilla"
+      fill
+      className="object-cover brightness-50"
+      />
+      
+      <div className="absolute inset-20 font-serif flex flex-col gap-3">
+        <h1 className="text-4xl font-bold leading-relaxed text-white text-left">
+          Welcome <br /> Smoethie Vibes
+        </h1>
+        
+        <p className="text-xl font-light text-white text-left">
+        Cafe Smoethievibes menyediakan berbagai healthy food sejak 2023. <br />
+        Senin – Kamis : 07.30 - 22.00 WIB <br />
+        Weekend : 07.30 - 22.30 WIB
+        </p>
+      </div>
+    </section>
       <MenuFav />
     </main>
   );
