@@ -10,12 +10,19 @@ import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
 import { ConfigService } from '@nestjs/config';
 
+interface ValidationConfig {
+  whitelist?: boolean;
+  forbidNonWhitelisted?: boolean;
+  transform?: boolean;
+  enableImplicitConversion?: boolean;
+}
+
 @Injectable()
 export class ValidationPipe implements PipeTransform<any> {
   private nestValidationPipe: NestValidationPipe;
 
   constructor(configService: ConfigService) {
-    const validationOptions = configService.get('validation') || {
+    const validationOptions = configService.get<ValidationConfig>('validation') || {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,

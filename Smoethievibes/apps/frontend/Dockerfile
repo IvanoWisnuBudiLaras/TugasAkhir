@@ -1,4 +1,4 @@
-﻿﻿﻿﻿FROM node:20-alpine AS base
+﻿﻿﻿﻿﻿﻿FROM node:20-alpine AS base
 
 # Install pnpm
 RUN npm install -g pnpm@10.20.0
@@ -27,7 +27,7 @@ EXPOSE 3000
 
 CMD ["pnpm", "dev"]
 
-# Production stage
+# Production stage untuk Fly.io
 FROM node:20-alpine AS production
 
 # Create non-root user
@@ -42,10 +42,10 @@ COPY package.json pnpm-lock.yaml* ./
 # Install production dependencies
 RUN npm install -g pnpm@10.20.0 && pnpm install --prod --frozen-lockfile
 
-# Copy built application
-COPY --from=base --chown=nextjs:nodejs /app/.next ./.next
+# Copy standalone build (hemat space)
+COPY --from=base --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=base --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=base --chown=nextjs:nodejs /app/public ./public
-COPY --from=base --chown=nextjs:nodejs /app/package.json ./package.json
 
 USER nextjs
 
@@ -54,4 +54,7 @@ EXPOSE 3000
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
-CMD ["pnpm", "start"]
+# Health check endpoint
+RUN echo 'module.exports = function handler(req, res) { res.status(200).json({ status: "ok", service: "frontend" }); }' > /app/pages/api/health.js
+
+CMD ["node", "server.js"]
