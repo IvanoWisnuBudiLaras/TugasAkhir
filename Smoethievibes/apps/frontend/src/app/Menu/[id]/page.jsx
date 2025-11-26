@@ -100,7 +100,7 @@ export default function DetailPage({ params }) {
   return (
     <div className="min-h-screen bg-gray-100 p-8 flex justify-center">
       <div className="max-w-2xl bg-white shadow-lg rounded-lg p-6">
-        {/* Image */}
+        {/* Image - Product */}
         <div className="w-full h-72 bg-gray-200 flex items-center justify-center mb-6">
           <Image
             src={product.image}
