@@ -21,7 +21,7 @@ export function Sectionone() {
 }
 
 export default function ProfilePage() {
-  const [activeTab, setActiveTab] = useState(""); // <-- penting
+  const [activeTab, setActiveTab] = useState(""); 
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center pt-32 pb-10">
@@ -30,7 +30,7 @@ export default function ProfilePage() {
       <div className="w-full max-w-lg mx-auto space-y-8">
 
         
-        <div className="w-full p-8 border border-green-400 rounded-3xl shadow-sm bg-white">
+        <div className="w-full p-8 border border-green-400 rounded-3xl shadow-sm bg-white animate-fadeIn">
           <h2 className="text-lg font-semibold text-green-700 mb-2">Informasi Akun</h2>
 
           <div className="space-y-4">
@@ -56,7 +56,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="w-full p-6 border border-gray-300 rounded-3xl flex flex-col gap-3 bg-white">
+        <div className="w-full p-6 border border-gray-300 rounded-3xl flex flex-col gap-3 bg-white animate-fadeIn">
           <button
             onClick={() => setActiveTab("history")}
             className="bg-green-400 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-green-500 transition"
