@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-// Data produk (HARUS sama seperti di Menu/page.jsx)
+// Data produk
 const products = [
   {
     id: 1,
@@ -80,18 +80,16 @@ const products = [
     price: "Rp 15.000",
     image: "/Menu/avocado salad.png",
   },
-
   {
     id: 14,
-    title:"Roti Bakar Tropicana Slim",
-    price:"Rp 15.000",
-    image:"/Menu/Roti bakar tropicana slim rasa crunchy chocolate.png",
+    title: "Roti Bakar Tropicana Slim",
+    price: "Rp 15.000",
+    image: "/Menu/Roti bakar tropicana slim rasa crunchy chocolate.png",
   },
 ];
 
-export default function DetailPage({ params }) {
-  const { id } = params;
-  const product = products.find((p) => p.id === Number(id));
+export default function DetailPage({ params }: { params: { id: string } }) {
+  const product = products.find((p) => p.id === Number(params.id));
 
   if (!product) {
     return <div className="p-10 text-center text-red-500">Produk tidak ditemukan!</div>;
@@ -100,6 +98,7 @@ export default function DetailPage({ params }) {
   return (
     <div className="min-h-screen bg-gray-100 p-8 flex justify-center">
       <div className="max-w-2xl bg-white shadow-lg rounded-lg p-6">
+        
         {/* Image */}
         <div className="w-full h-72 bg-gray-200 flex items-center justify-center mb-6">
           <Image
@@ -130,5 +129,4 @@ export default function DetailPage({ params }) {
       </div>
     </div>
   );
-  
 }
