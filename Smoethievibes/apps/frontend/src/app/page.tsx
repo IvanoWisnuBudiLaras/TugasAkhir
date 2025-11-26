@@ -12,7 +12,7 @@ const cafePlace = [
 
 export default function Home() {
   return (
-  <main className="min-h-screen bg-white">
+  <main className="bg-white">
     <section className="relative w-full h-[500px]">
       <Image
       src="/Landing/kasir1.jpg"
@@ -22,11 +22,11 @@ export default function Home() {
       />
       
       <div className="absolute inset-20 font-serif flex flex-col gap-3">
-        <h1 className="text-4xl font-bold leading-relaxed text-white text-left">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-snug text-white">
           Welcome <br /> Smoethie Vibes
         </h1>
         
-        <p className="text-xl font-light text-white text-left">
+        <p className="text-sm sm:text-base md:text-lg lg:text-xl font-light text-white">
         Cafe Smoethievibes menyediakan berbagai healthy food sejak 2023. <br />
         Senin – Kamis : 07.30 - 22.00 WIB <br />
         Weekend : 07.30 - 22.30 WIB
@@ -40,27 +40,28 @@ export default function Home() {
 
 export function MenuFav() {
   return (
-    <section className="w-full bg-[#7E845A] py-12">
-      <h2 className="text-center text-3xl text-white font-bold mb-8">
-        Popular Menu
-      </h2>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-6 justify-items-center">
-        {menuItems.map((item, idx) => (
-          <div className="text-center" key={idx}>
-            <div className="relative w-32 h-40 bg-[#C56767] rounded-md mx-auto overflow-hidden">
-              <Image
-                src={item.img}
-                alt={item.nama}
-                fill
-                className="object-cover"
-              />
-            </div>
-
-            <p className="text-white text-sm mt-2">{item.nama}</p>
+  <section className="w-full bg-[#7E845A] py-12">
+    <h2 className="text-center text-3xl text-white font-bold mb-8">
+    Popular Menu
+    </h2>
+    
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 justify-items-center">
+      {menuItems.map((item, idx) => (
+        <div className="text-center" key={idx}>
+          <div className="relative w-40 h-48 bg-[#C56767] rounded-md mx-auto overflow-hidden">
+            <Image
+            src={item.img}
+            alt={item.nama}
+            fill
+            className="object-cover"
+            />
           </div>
-        ))}
-      </div>
-    </section>
+          
+          <p className="text-white text-sm mt-2">{item.nama}</p>
+        
+        </div>
+      ))}
+    </div>
+  </section>
   );
 }
