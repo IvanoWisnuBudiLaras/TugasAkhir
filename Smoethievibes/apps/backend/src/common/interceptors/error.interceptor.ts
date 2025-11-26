@@ -5,12 +5,19 @@ import {
   CallHandler,
   HttpException,
   HttpStatus,
+  Inject,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 @Injectable()
 export class ErrorInterceptor implements NestInterceptor {
+  constructor(
+    @Inject(ConfigService)
+    private configService: ConfigService,
+  ) {}
+
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     return next.handle().pipe(
       catchError((error) => {
@@ -22,9 +29,10 @@ export class ErrorInterceptor implements NestInterceptor {
         const message =
           error instanceof HttpException
             ? error.message
-            : 'Internal server error';
+            : this.configService.get('messages.errors.internalServerError');
 
-        console.error(`Error: ${message}`, error.stack);
+        const errorLogTemplate = this.configService.get('messages.info.errorLog') || 'Error: ${message}';
+        console.error(errorLogTemplate.replace('${message}', message), error.stack);
 
         return throwError(() => new HttpException(
           {

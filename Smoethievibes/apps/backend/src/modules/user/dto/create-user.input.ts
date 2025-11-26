@@ -35,6 +35,6 @@ export class CreateUserInput {
   @IsString()
   address?: string;
 
-  @Field(() => UserRole, {defaultValue: UserRole.USER})
+  @Field(() => UserRole, {defaultValue: UserRole.CUSTOMER})
   role!: UserRole;
 }

@@ -12,7 +12,7 @@ const cafePlace = [
 
 export default function Home() {
   return (
-  <main className="bg-white">
+  <main className="min-h-screen bg-white">
     <section className="relative w-full h-[500px]">
       <Image
       src="/Landing/kasir1.jpg"
