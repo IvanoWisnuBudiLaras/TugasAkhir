@@ -1,21 +1,8 @@
-import { DocumentBuilder, SwaggerCustomOptions } from '@nestjs/swagger';
+import { registerAs } from '@nestjs/config';
 
-export const swaggerConfig = new DocumentBuilder()
-  .setTitle('Smoethievibes API')
-  .setDescription('The Smoethievibes API documentation')
-  .setVersion('1.0')
-  .addBearerAuth()
-  .build();
-
-export const swaggerOptions: SwaggerCustomOptions = {
-  customSiteTitle: 'Smoethievibes API Docs',
-  customfavIcon: 'https://nestjs.com/img/logo-small.svg',
-  customJs: [
-    'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.min.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.min.js',
-  ],
-  customCssUrl: [
-    'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
-    'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.min.css',
-  ],
-};
+export default registerAs('swagger', () => ({
+  enabled: process.env.NODE_ENV !== 'production',
+  title: process.env.SWAGGER_TITLE || 'Smoethievibes API',
+  description: process.env.SWAGGER_DESCRIPTION || 'Smoethievibes API Documentation',
+  version: process.env.SWAGGER_VERSION || '1.0',
+}));

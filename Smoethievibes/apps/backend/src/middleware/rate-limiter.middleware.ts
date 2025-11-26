@@ -1,4 +1,5 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Request, Response, NextFunction } from 'express';
 
 interface RateLimitInfo {
@@ -8,11 +9,18 @@ interface RateLimitInfo {
 
 @Injectable()
 export class RateLimiterMiddleware implements NestMiddleware {
-  private requests = new Map<string, RateLimitInfo>();
-  private readonly windowMs = 15 * 60 * 1000; // 15 minutes
-  private readonly maxRequests = 100;
+  private readonly requests = new Map<string, RateLimitInfo>();
+  private readonly windowMs: number;
+  private readonly maxRequests: number;
+  private readonly message: string;
 
-  use(req: Request, res: Response, next: NextFunction) {
+  constructor(private configService: ConfigService) {
+    this.windowMs = this.configService.get('rateLimit.windowMs', 900000);
+    this.maxRequests = this.configService.get('rateLimit.max', 100);
+    this.message = this.configService.get('rateLimit.message', 'Too many requests from this IP, please try again later.');
+  }
+
+  use(req: Request, res: Response, next: NextFunction): void {
     const ip = req.ip || req.connection.remoteAddress || 'unknown';
     const now = Date.now();
     
@@ -27,11 +35,12 @@ export class RateLimiterMiddleware implements NestMiddleware {
     }
     
     if (requestInfo.count >= this.maxRequests) {
-      return res.status(429).json({
+      res.status(429).json({
         success: false,
-        message: 'Too many requests from this IP, please try again later.',
+        message: this.message,
         retryAfter: Math.ceil((requestInfo.resetTime - now) / 1000),
       });
+      return;
     }
     
     requestInfo.count++;

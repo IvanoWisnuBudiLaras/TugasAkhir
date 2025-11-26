@@ -1,4 +1,5 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 export class CustomException extends HttpException {
   constructor(message: string, status: HttpStatus = HttpStatus.BAD_REQUEST) {
@@ -20,19 +21,19 @@ export class NotFoundException extends CustomException {
 }
 
 export class UnauthorizedException extends CustomException {
-  constructor(message: string = 'Unauthorized') {
-    super(message, HttpStatus.UNAUTHORIZED);
+  constructor(message?: string) {
+    super(message || 'Unauthorized', HttpStatus.UNAUTHORIZED);
   }
 }
 
 export class ForbiddenException extends CustomException {
-  constructor(message: string = 'Forbidden') {
-    super(message, HttpStatus.FORBIDDEN);
+  constructor(message?: string) {
+    super(message || 'Forbidden', HttpStatus.FORBIDDEN);
   }
 }
 
 export class ConflictException extends CustomException {
-  constructor(message: string = 'Conflict') {
-    super(message, HttpStatus.CONFLICT);
+  constructor(message?: string) {
+    super(message || 'Conflict', HttpStatus.CONFLICT);
   }
 }
