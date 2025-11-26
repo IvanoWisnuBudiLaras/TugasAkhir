@@ -1,9 +1,9 @@
 ﻿"use client";
 
-import "@/src/styles/globals.css";
+import "@/styles/globals.css";
 import { usePathname } from "next/navigation";
-import Nav from "@/src/components/Nav";
-import Footer from "@/src/components/footer";
+import Nav from "@/components/Nav";
+import Footer from "@/components/footer";
 
 export default function RootLayout({
   children,
