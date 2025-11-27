@@ -6,9 +6,7 @@ const menuItems = [
   { nama: "Dimsum Mentai", img: "/Landing/placeholder.png" },
 ];
 
-const cafePlace = [
-  { nama: "Kasir", img: "/Landing/kasir1.jpg" },
-];
+// `cafePlace` removed because it was unused. Keep static content minimal.
 
 export default function Home() {
   return (

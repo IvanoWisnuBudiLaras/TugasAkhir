@@ -2,8 +2,10 @@
 
 import "@/styles/globals.css";
 import { usePathname } from "next/navigation";
-import Nav from "@/src/components/Nav";
-import Footer from "@/src/components/footer";
+import Nav from "@/components/Nav";
+import Footer from "@/components/footer";
+import { ApolloProvider } from "@apollo/client";
+import client from "@/lib/apollo-client";
 
 export default function RootLayout({
   children,

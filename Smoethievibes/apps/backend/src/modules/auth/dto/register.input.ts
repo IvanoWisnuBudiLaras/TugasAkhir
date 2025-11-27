@@ -27,4 +27,9 @@ export class RegisterInput {
   @IsOptional()
   @IsString()
   address?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  avatar?: string;
 }

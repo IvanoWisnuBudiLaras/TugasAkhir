@@ -27,7 +27,8 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() req: any, @Res() res: any) {
     const { access_token } = req.user;
-    res.redirect(`http://localhost:3000/auth/callback?token=${access_token}`);
+    // Redirect to frontend /Auth/callback (capitalized to match folder)
+    res.redirect(`http://localhost:3000/Auth/callback?token=${access_token}`);
   }
 
   @Get('status')
@@ -38,7 +39,12 @@ export class AuthController {
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
   async getCurrentUser(@CurrentUser() user: any) {
-    return user;
+    console.log('Fetching profile for user:', user.sub);
+    const profile = await this.authService.getMe(user.sub);
+    if (!profile) {
+      console.error('Profile not found for user:', user.sub);
+    }
+    return profile;
   }
 
   @Patch('complete-profile')

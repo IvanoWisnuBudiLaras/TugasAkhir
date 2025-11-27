@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -31,7 +31,7 @@ export class AuthService {
       const errorMessage =
         this.configService.get('auth.errorMessages.invalidCredentials') ||
         'Invalid credentials';
-      throw new Error(errorMessage);
+      throw new BadRequestException(errorMessage);
     }
     const payload = {
       sub: user.id,
@@ -47,24 +47,38 @@ export class AuthService {
   // Register new user (email/password)
   async register(registerInput: RegisterInput) {
     const { password, ...userData } = registerInput;
+    // Check if user already exists
+    const existingUser = await this.prisma.user.findUnique({ where: { email: userData.email } });
+    if (existingUser) {
+      throw new BadRequestException('Email already in use');
+    }
     const saltRounds = parseInt(this.configService.get('auth.bcryptSaltRounds') || '10');
     const hashedPassword = await bcrypt.hash(password, saltRounds);
-    const user = await this.prisma.user.create({
-      data: {
-        ...userData,
-        password: hashedPassword,
-      },
-    });
-    const { password: _, ...result } = user;
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      roles: user.role || [],
-      iss: this.configService.get('auth.token.issuer') || 'smoethievibes',
-      aud: this.configService.get('auth.token.audience') || 'smoethievibes-users',
-    };
-    const accessToken = this.jwtService.sign(payload);
-    return { access_token: accessToken, user: result };
+    try {
+      const user = await this.prisma.user.create({
+        data: {
+          ...userData,
+          name: userData.name || "",
+          phone: userData.phone || "",
+          address: userData.address || "",
+          avatar: userData.avatar || "",
+          password: hashedPassword,
+        },
+      });
+      const { password: _, ...result } = user;
+      const payload = {
+        sub: user.id,
+        email: user.email,
+        roles: user.role || [],
+        iss: this.configService.get('auth.token.issuer') || 'smoethievibes',
+        aud: this.configService.get('auth.token.audience') || 'smoethievibes-users',
+      };
+      const accessToken = this.jwtService.sign(payload);
+      return { access_token: accessToken, user: result };
+    } catch (error: any) {
+      const message = error?.meta?.target ? `Field '${error.meta.target[0]}' failed` : error?.message || 'Registration failed';
+      throw new BadRequestException(message);
+    }
   }
 
   // Google OAuth login/registration
@@ -124,5 +138,12 @@ export class AuthService {
     });
     const { password, ...result } = updatedUser;
     return result;
+  }
+
+  // Get current user profile
+  async getMe(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+    });
   }
 }

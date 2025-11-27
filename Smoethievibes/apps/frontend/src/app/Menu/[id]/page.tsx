@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 // Data produk
 const products = [
@@ -119,12 +120,12 @@ export default function DetailPage({ params }: { params: { id: string } }) {
         </p>
 
         {/* Back Button */}
-        <a
+        <Link
           href="/Menu"
           className="inline-block px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700"
         >
           Kembali ke menu
-        </a>
+        </Link>
       </div>
     </div>
   );

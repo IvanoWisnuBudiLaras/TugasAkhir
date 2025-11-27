@@ -9,8 +9,9 @@ import {
   Menu,
   MessageSquare,
   User,
-  LogOut,
+  LayoutDashboard,
 } from "lucide-react";
+import { jwtDecode } from "jwt-decode";
 
 // Reusable NavItem component
 interface NavItemProps {
@@ -34,14 +35,27 @@ function NavItem({ href, label, icon }: NavItemProps) {
   );
 }
 
+interface JwtPayload {
+  roles: string;
+}
+
 export default function Nav() {
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
     // Only run on client side
     const stored = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     setToken(stored);
+    if (stored) {
+      try {
+        const decoded = jwtDecode<JwtPayload>(stored);
+        setRole(decoded.roles);
+      } catch (error) {
+        console.error("Invalid token", error);
+      }
+    }
   }, []);
 
   const handleLogout = () => {
@@ -49,8 +63,12 @@ export default function Nav() {
       localStorage.removeItem("token");
     }
     setToken(null);
+    setRole(null);
     router.push("/Auth");
   };
+
+  const isLogged = !!token;
+  const isAdminOrStaff = role === "ADMIN" || role === "STAFF" || role === "MANAGER";
 
   return (
     <>
@@ -68,12 +86,17 @@ export default function Nav() {
             <li className="hover:text-black transition"><Link href="/">Home</Link></li>
             <li className="hover:text-black transition"><Link href="/Menu">Menu</Link></li>
             <li className="hover:text-black transition"><Link href="/Contact">Contact</Link></li>
-            {token && (<li className="hover:text-black transition"><Link href="/Profile">Profile</Link></li>)}
+            {isAdminOrStaff && (
+              <li className="hover:text-black transition"><Link href="/admin">Admin Panel</Link></li>
+            )}
+            {isLogged && (
+              <li className="hover:text-black transition"><Link href="/Profile">Profile</Link></li>
+            )}
           </ul>
 
           {/* Auth actions */}
           <div className="flex items-center gap-4">
-            {token ? (
+            {isLogged ? (
               <button
                 onClick={handleLogout}
                 className="bg-gray-800 text-white font-semibold px-4 py-2 rounded-full hover:bg-gray-700 transition"
@@ -98,7 +121,7 @@ export default function Nav() {
           <Image src="/logo2.png" alt="Logo" width={34} height={34} className="rounded-full border border-black/10" />
           <span className="text-[17px] font-semibold text-black">Smoethie Vibe</span>
         </Link>
-        {token ? (
+        {isLogged ? (
           <button
             onClick={handleLogout}
             className="bg-gray-800 text-white text-sm font-semibold px-3 py-1 rounded-full hover:bg-gray-700 transition"
@@ -119,8 +142,12 @@ export default function Nav() {
       <nav className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-[90%] bg-white/80 backdrop-blur-xl border border-black/10 rounded-3xl px-6 py-3 shadow-lg flex justify-between z-50">
         <NavItem href="/" label="Home" icon={<Home />} />
         <NavItem href="/Menu" label="Menu" icon={<Menu />} />
-        <NavItem href="/Contact" label="Contact" icon={<MessageSquare />} />
-        {token && <NavItem href="/Profile" label="Profile" icon={<User />} />}
+        {isAdminOrStaff ? (
+          <NavItem href="/admin" label="Admin" icon={<LayoutDashboard />} />
+        ) : (
+          <NavItem href="/Contact" label="Contact" icon={<MessageSquare />} />
+        )}
+        {isLogged && <NavItem href="/Profile" label="Profile" icon={<User />} />}
       </nav>
     </>
   );

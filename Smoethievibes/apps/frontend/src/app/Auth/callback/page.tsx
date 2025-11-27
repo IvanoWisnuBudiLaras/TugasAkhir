@@ -1,269 +1,200 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { motion } from "framer-motion";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
-const API_URL = "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-export default function GoogleCallbackPage() {
+export const dynamic = "force-dynamic";
+
+export default function CallbackPage() {
     const router = useRouter();
-    const searchParams = useSearchParams();
-    
-    const [isLoading, setIsLoading] = useState(true);
-    const [isNewUser, setIsNewUser] = useState(false);
-    const [token, setToken] = useState<string | null>(null);
-    const [googleAvatar, setGoogleAvatar] = useState<string>("");
-    
-    // Form states
+    // We'll read the token from the URL on the client via window.location.search
+
+    type User = {
+        id?: string;
+        email?: string;
+        name?: string | null;
+        avatar?: string | null;
+        phone?: string | null;
+        address?: string | null;
+    };
+
+    type ProfileUpdate = {
+        name: string;
+        phone?: string;
+        address?: string;
+        avatar?: string;
+    };
+
+    const [loading, setLoading] = useState(true);
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
     const [address, setAddress] = useState("");
     const [avatar, setAvatar] = useState("");
-    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
-        const checkUserAndAuth = async () => {
+        const init = async () => {
             try {
-                const tokenParam = searchParams.get("token");
-                if (!tokenParam) {
-                    router.push("/Auth?error=auth_failed");
+                const urlToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('token') : null;
+                const token = urlToken || localStorage.getItem("token");
+                if (!token) {
+                    router.push("/auth");
                     return;
                 }
 
-                setToken(tokenParam);
-                localStorage.setItem("token", tokenParam);
+                // Save token to localStorage for subsequent requests
+                localStorage.setItem("token", token);
 
-                // Check if user exists and has complete profile
-                const response = await fetch(`${API_URL}/auth/me`, {
-                    method: "GET",
+                // Call backend to get user info
+                const res = await fetch(`${API_URL}/auth/me`, {
                     headers: {
-                        "Authorization": `Bearer ${tokenParam}`,
+                        Authorization: `Bearer ${token}`,
                     },
                 });
 
-                if (response.ok) {
-                    const userData = await response.json();
-                    console.log("User data:", userData);
-                    
-                    // If user has complete profile, redirect to home
-                    if (userData.name) {
-                        router.push("/");
-                    } else {
-                        // New user or incomplete profile - show form
-                        setIsNewUser(true);
-                        if (userData.name) setName(userData.name);
-                        if (userData.address) setAddress(userData.address);
-                        if (userData.avatar) {
-                            setAvatar(userData.avatar);
-                            setGoogleAvatar(userData.avatar);
-                        }
-                        if (userData.phone) setPhone(userData.phone);
-                    }
-                } else {
-                    setIsNewUser(true);
+                if (!res.ok) {
+                    // Could be a brand new token or invalid — redirect to auth
+                    router.push("/auth");
+                    return;
                 }
-            } catch (error) {
-                console.error("Auth check failed:", error);
-                setIsNewUser(true);
+
+                const data: User = await res.json();
+
+                // If user already has a name, go to profile
+                if (data?.name) {
+                    router.push("/Profile");
+                    return;
+                }
+
+                // Prefill avatar from Google if exists
+                setAvatar(data?.avatar || "");
+            } catch (err) {
+                console.error(err);
             } finally {
-                setIsLoading(false);
+                setLoading(false);
             }
         };
 
-        checkUserAndAuth();
-    }, [router, searchParams]);
+        init();
+    }, [router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
-        if (!name.trim()) {
-            alert("Nama wajib diisi!");
-            return;
-        }
+        setLoading(true);
 
-        setSubmitting(true);
         try {
-            const response = await fetch(`${API_URL}/auth/complete-profile`, {
-                method: "POST",
+            const token = localStorage.getItem("token");
+            if (!token) throw new Error("No token available");
+
+            const body: ProfileUpdate = { name } as ProfileUpdate;
+            if (phone) body.phone = phone;
+            if (address) body.address = address;
+            if (avatar) body.avatar = avatar;
+
+            const res = await fetch(`${API_URL}/auth/complete-profile`, {
+                method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({
-                    name: name.trim(),
-                    phone: phone.trim() || null,
-                    address: address.trim(),
-                    avatar: avatar.trim() || null,
-                }),
+                body: JSON.stringify(body),
             });
 
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || "Failed to complete profile");
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.message || "Unable to complete profile");
             }
 
-            alert("Profil berhasil dilengkapi!");
-            router.push("/");
-        } catch (error) {
-            const err = error instanceof Error ? error : new Error("An error occurred");
+            // Navigate to profile after completion
+            router.push('/Profile');
+        } catch (err: unknown) {
             console.error(err);
-            alert(err.message);
+            const message = err instanceof Error ? err.message : String(err);
+            alert(message || "Failed to complete profile");
         } finally {
-            setSubmitting(false);
+            setLoading(false);
         }
     };
 
-    if (isLoading) {
+    if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-200 via-green-100 to-white">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5 }}
-                    className="bg-white/60 backdrop-blur-xl p-10 rounded-3xl shadow-[0_20px_40px_rgba(0,0,0,0.1)] border border-white/50 flex flex-col items-center gap-6"
-                >
-                    <div className="relative w-16 h-16">
-                        <motion.div
-                            className="absolute inset-0 border-4 border-green-200 rounded-full"
-                        />
-                        <motion.div
-                            className="absolute inset-0 border-4 border-green-600 border-t-transparent rounded-full"
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        />
-                    </div>
-                    <div className="text-center">
-                        <h2 className="text-xl font-semibold text-neutral-800">Verifying your account</h2>
-                        <p className="text-neutral-500 mt-1">Please wait...</p>
-                    </div>
-                </motion.div>
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">Processing authentication...</div>
             </div>
         );
     }
 
-    if (isNewUser) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-200 via-green-100 to-white px-4">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="w-full max-w-md bg-white/70 backdrop-blur-2xl shadow-[0_30px_60px_rgba(0,0,0,0.08)] rounded-2xl border border-black/10 p-8"
-                >
-                    <h2 className="text-3xl font-semibold text-neutral-900 mb-2">Welcome to Smoothievibes!</h2>
-                    <p className="text-neutral-600 mb-6">Please enter your name to complete your Google registration</p>
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+            <form onSubmit={handleSubmit} className="w-full max-w-md bg-white p-8 rounded-lg shadow">
+                <h2 className="text-2xl font-semibold mb-4">Complete your profile</h2>
 
-                    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                        {/* Google Avatar Preview */}
-                        {googleAvatar && (
-                            <div className="flex flex-col items-center mb-4">
-                                <p className="text-sm text-neutral-600 mb-2">Your Google Avatar</p>
-                                <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-green-400">
-                                    <Image
-                                        src={googleAvatar}
-                                        alt="Google Avatar"
-                                        width={80}
-                                        height={80}
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                            </div>
+                <p className="text-sm text-gray-600 mb-4">
+                    We only need your name to finish setting up your account. You can add more details later.
+                </p>
+
+                <div className="mb-4 flex items-center gap-4">
+                    <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                        {avatar ? (
+                            // next/image requires externally allowed domains configured in next.config.js in production,
+                            // in dev this works with a full URL. If this errors, consider replacing with an <img /> tag.
+                            <Image src={avatar} alt="avatar" width={80} height={80} />
+                        ) : (
+                            <div className="text-gray-400">No avatar</div>
                         )}
-
-                        <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-2">
-                                Full Name <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                placeholder="Enter your full name"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                disabled={submitting}
-                                required
-                                autoFocus
-                                className="w-full p-3 rounded-xl border border-black/20 focus:ring-2 focus:ring-green-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-2">
-                                Phone Number
-                            </label>
-                            <input
-                                type="tel"
-                                placeholder="Enter your phone number (optional)"
-                                value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
-                                disabled={submitting}
-                                className="w-full p-3 rounded-xl border border-black/20 focus:ring-2 focus:ring-green-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-2">
-                                Address
-                            </label>
-                            <textarea
-                                placeholder="Enter your address (optional)"
-                                value={address}
-                                onChange={(e) => setAddress(e.target.value)}
-                                disabled={submitting}
-                                rows={3}
-                                className="w-full p-3 rounded-xl border border-black/20 focus:ring-2 focus:ring-green-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed resize-none"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-2">
-                                Avatar URL
-                            </label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="url"
-                                    placeholder="Enter avatar URL (optional)"
-                                    value={avatar}
-                                    onChange={(e) => setAvatar(e.target.value)}
-                                    disabled={submitting}
-                                    className="flex-1 p-3 rounded-xl border border-black/20 focus:ring-2 focus:ring-green-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                />
-                                {googleAvatar && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setAvatar(googleAvatar)}
-                                        disabled={submitting}
-                                        className="px-4 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium whitespace-nowrap"
-                                    >
-                                        Use Google
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
+                    </div>
+                    {avatar && (
                         <button
-                            type="submit"
-                            disabled={submitting}
-                            className="mt-4 py-3 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                            type="button"
+                            onClick={() => {
+                                setAvatar(avatar);
+                            }}
+                            className="px-3 py-1 rounded bg-green-600 text-white"
                         >
-                            {submitting ? (
-                                <>
-                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Processing...
-                                </>
-                            ) : (
-                                "Complete Profile"
-                            )}
+                            Use Google
                         </button>
-                    </form>
-                </motion.div>
-            </div>
-        );
-    }
+                    )}
+                </div>
 
-    return null;
+                <label className="block mb-2 text-sm font-medium text-gray-700">Name *</label>
+                <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    className="w-full p-3 border rounded mb-4"
+                />
+
+                <label className="block mb-2 text-sm font-medium text-gray-700">Phone (optional)</label>
+                <input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full p-3 border rounded mb-4"
+                />
+
+                <label className="block mb-2 text-sm font-medium text-gray-700">Address (optional)</label>
+                <input
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full p-3 border rounded mb-4"
+                />
+
+                <label className="block mb-2 text-sm font-medium text-gray-700">Avatar URL (optional)</label>
+                <input
+                    value={avatar}
+                    onChange={(e) => setAvatar(e.target.value)}
+                    className="w-full p-3 border rounded mb-6"
+                />
+
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 bg-green-600 text-white rounded font-semibold disabled:opacity-50"
+                >
+                    {loading ? 'Saving...' : 'Complete Profile'}
+                </button>
+            </form>
+        </div>
+    );
 }
