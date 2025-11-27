@@ -1,4 +1,8 @@
 ﻿﻿import Image from "next/image";
+import {Portrait} from "@/components/portrait";
+import {Rekomendasi} from "@/components/rekomendasi";
+import MapSection from "@/components/MapSection";
+import {TestimoniSection} from "@/components/TestimoniSection"; 
 
 const menuItems = [
   { nama: "Roasted Chicken Up", img: "/Landing/Roasted chiken Up with mashed potato.png" },
