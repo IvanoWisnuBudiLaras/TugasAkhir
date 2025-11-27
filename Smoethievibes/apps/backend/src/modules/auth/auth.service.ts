@@ -58,10 +58,7 @@ export class AuthService {
       const user = await this.prisma.user.create({
         data: {
           ...userData,
-          name: userData.name || "",
-          phone: userData.phone || "",
-          address: userData.address || "",
-          avatar: userData.avatar || "",
+          name: userData.name || null,
           password: hashedPassword,
         },
       });
@@ -145,5 +142,15 @@ export class AuthService {
     return this.prisma.user.findUnique({
       where: { id: userId },
     });
+  }
+
+  // Record last login timestamp
+  async recordLastLogin(userId: string) {
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { lastLogin: new Date() },
+    });
+    const { password, ...result } = updatedUser;
+    return result;
   }
 }

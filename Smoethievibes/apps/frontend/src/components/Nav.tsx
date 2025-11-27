@@ -8,10 +8,78 @@ import {
   Home,
   Menu,
   MessageSquare,
-  User
+  User,
+  LogOut,
+  Settings,
 } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+type UserProfile = {
+  id: string;
+  email: string;
+  name?: string | null;
+  avatar?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  role?: string;
+};
+
 export default function Nav() {
+  const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // On mount, check if user is authenticated and fetch profile
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch(`${API_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error('Failed to fetch profile');
+        const profile: UserProfile = await res.json();
+        setIsLoggedIn(true);
+        setIsAdmin(profile.role === 'ADMIN');
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        localStorage.removeItem('token');
+        setIsLoggedIn(false);
+        setIsAdmin(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  const handleLogout = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      await fetch(`${API_URL}/auth/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      localStorage.removeItem('token');
+      setIsLoggedIn(false);
+      setIsAdmin(false);
+      router.push('/');
+    }
+  };
+
   return (
     <>
       {/* DESKTOP NAV */}
@@ -33,22 +101,35 @@ export default function Nav() {
             <li className="hover:text-black transition"><Link href="/">Home</Link></li>
             <li className="hover:text-black transition"><Link href="/Menu">Menu</Link></li>
             <li className="hover:text-black transition"><Link href="/Contact">Contact</Link></li>
-            <li className="hover:text-black transition"><Link href="/Profile">Profile</Link></li>
+            {isLoggedIn && <li className="hover:text-black transition"><Link href="/Profile">Profile</Link></li>}
+            {isAdmin && <li className="hover:text-black transition"><Link href="/admin/dashboard">Admin Dashboard</Link></li>}
           </ul>
 
-          {/* CTA Button (Sign In) */}
-          <div className="flex items-center">
-            <Link
-              href="/Auth"
-              className="bg-black text-white font-semibold px-6 py-2 rounded-full hover:bg-black/80 transition inline-block text-center"
-            >
-              Sign In
-            </Link>
+          {/* CTA Buttons (Sign In or Logout) */}
+          <div className="flex items-center gap-3">
+            {!loading && (
+              isLoggedIn ? (
+                <button
+                  onClick={handleLogout}
+                  className="bg-red-600 text-white font-semibold px-6 py-2 rounded-full hover:bg-red-700 transition inline-flex items-center gap-2"
+                >
+                  <LogOut size={18} />
+                  Logout
+                </button>
+              ) : (
+                <Link
+                  href="/Auth"
+                  className="bg-black text-white font-semibold px-6 py-2 rounded-full hover:bg-black/80 transition inline-block text-center"
+                >
+                  Sign In
+                </Link>
+              )
+            )}
           </div>
         </nav>
       </header>
 
-      {/* MOBILE TOP NAV (LOGO + SIGN UP) */}
+      {/* MOBILE TOP NAV (LOGO + SIGN UP/LOGOUT) */}
       <header className="
         md:hidden
         fixed top-0 left-0 w-full z-50
@@ -63,13 +144,25 @@ export default function Nav() {
           <span className="text-[17px] font-semibold text-black">Smoethie Vibe</span>
         </Link>
 
-        {/* Sign Up */}
-        <Link
-          href="/Auth"
-          className="bg-black text-white text-sm font-semibold px-4 py-1.5 rounded-full hover:bg-black/80 transition inline-block text-center"
-        >
-          Sign Up
-        </Link>
+        {/* Sign Up or Logout */}
+        {!loading && (
+          isLoggedIn ? (
+            <button
+              onClick={handleLogout}
+              className="bg-red-600 text-white text-sm font-semibold px-4 py-1.5 rounded-full hover:bg-red-700 transition inline-flex items-center gap-1"
+            >
+              <LogOut size={16} />
+              Logout
+            </button>
+          ) : (
+            <Link
+              href="/Auth"
+              className="bg-black text-white text-sm font-semibold px-4 py-1.5 rounded-full hover:bg-black/80 transition inline-block text-center"
+            >
+              Sign Up
+            </Link>
+          )
+        )}
       </header>
 
       {/* MOBILE BOTTOM NAV */}
@@ -88,7 +181,8 @@ export default function Nav() {
         <NavItem href="/" label="Home" icon={<Home />} />
         <NavItem href="/Menu" label="Menu" icon={<Menu />} />
         <NavItem href="/Contact" label="Contact" icon={<MessageSquare />} />
-        <NavItem href="/Profile" label="Profile" icon={<User />} />
+        {isLoggedIn && <NavItem href="/Profile" label="Profile" icon={<User />} />}
+        {isAdmin && <NavItem href="/admin/dashboard" label="Admin" icon={<Settings />} />}
       </nav>
     </>
   );

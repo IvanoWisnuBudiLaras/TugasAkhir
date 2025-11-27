@@ -1,14 +1,8 @@
 ﻿﻿import Image from "next/image";
-
-const menuItems = [
-  { nama: "Roasted Chicken Up", img: "/Landing/Roasted chiken Up with mashed potato.png" },
-  { nama: "Strawberry Matcha Yogurt", img: "/Landing/strawberry matcha yogurt.jpg" },
-  { nama: "Dimsum Mentai", img: "/Landing/placeholder.png" },
-];
-
-const cafePlace = [
-  { nama: "Kasir", img: "/Landing/kasir1.jpg" },
-];
+import { Portrait } from "@/components/portrait";
+import { Rekomendasi } from "@/components/rekomendasi";
+import MapSection from "@/components/MapSection";
+import { TestimoniSection } from "@/components/TestimoniSection";
 
 export default function Home() {
   return (

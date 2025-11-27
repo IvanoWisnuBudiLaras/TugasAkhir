@@ -109,9 +109,10 @@ export default function ProfilePage() {
             const updated: User = await res.json();
             setProfile(updated);
             alert('Profile updated successfully!');
-        } catch (_err) {
-            setError('Failed to update profile');
-        } finally {
+        } catch (err) {
+                console.error(err);
+                setError('Failed to update profile');
+            } finally {
             setUpdating(false);
         }
     };
