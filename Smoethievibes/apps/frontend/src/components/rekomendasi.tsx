@@ -5,7 +5,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Star } from "lucide-react"; 
-import { CartButton } from "./Cart"; // Import CartButton
+import { CartButton } from "./CartButton"; // Import CartButton
 
 // Data Produk (Hanya 3 item teratas)
 const menuRekomendasi = [

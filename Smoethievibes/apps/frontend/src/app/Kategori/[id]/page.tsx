@@ -5,7 +5,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { Star } from 'lucide-react';
-import { CartButton } from '@/components/Cart'; // Asumsikan lokasi CartButton
+import { CartButton } from '@/components/CartButton'; // Asumsikan lokasi CartButton
 
 // Data Produk (Disesuaikan agar merepresentasikan daftar menu di halaman kategori)
 const fullMenuData = [

@@ -1,29 +1,10 @@
 "use client";
 import React, { useMemo, useState } from 'react';
-// Catatan: Next/image dan next/link dihapus dan diganti dengan <img> dan <a> karena masalah resolusi impor.
 import { Trash2, Minus, Plus, ShoppingCart, ArrowRight, CheckCircle } from 'lucide-react';
-// Catatan: useCart dari Context dihapus sementara dan diganti dengan state lokal 
-// agar komponen dapat berjalan secara independen di lingkungan ini.
-
-// --- Definisi Tipe dan Data Simulasi (Reintroducing local state)
-interface CartItem {
-    id: number;
-    name: string;
-    price: number;
-    quantity: number;
-    img: string;
-}
-
-// Data awal (Simulasi)
-const initialCartItems: CartItem[] = [
-    { id: 1, name: "Avocado Salad", price: 25000, quantity: 2, img: "https://placehold.co/64x64/E0F7FA/000?text=Avo" },
-    { id: 2, name: "Cocoa Peanut Butter", price: 30000, quantity: 1, img: "https://placehold.co/64x64/E0F7FA/000?text=Cocoa" },
-    { id: 3, name: "Green Dream", price: 26000, quantity: 3, img: "https://placehold.co/64x64/E0F7FA/000?text=Dream" },
-];
+import { useCart } from '@/app/Context/CartContext';
 
 export default function CartPage() {
-    // Menggunakan state lokal untuk item keranjang (sementara mengganti useCart)
-    const [cartItems, setCartItems] = useState<CartItem[]>(initialCartItems);
+    const { items: cartItems, removeItem, updateQuantity } = useCart();
     
     // State untuk notifikasi setelah checkout (mengganti alert)
     const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
@@ -32,20 +13,6 @@ export default function CartPage() {
     const cartTotal = useMemo(() => {
         return cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
     }, [cartItems]);
-
-    // Handler Kuantitas (Disalin dari logic Context sebelumnya)
-    const updateQuantity = (id: number, delta: number) => {
-        setCartItems(prevItems => 
-            prevItems.map(item => 
-                item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-            )
-        );
-    };
-
-    // Handler Hapus Item (Disalin dari logic Context sebelumnya)
-    const removeItem = (id: number) => {
-        setCartItems(prevItems => prevItems.filter(item => item.id !== id));
-    };
 
     // Handler Checkout (Simulasi, tanpa alert)
     const handleCheckout = () => {

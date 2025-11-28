@@ -26,8 +26,7 @@ export function CartButton({ productId, productName, productPrice, productImg }:
             quantity: 1
         };
         
-        addItem(newItem); 
-        alert(`${productName} berhasil ditambahkan ke keranjang!`);
+        addItem(newItem);
     };
 
     return (
