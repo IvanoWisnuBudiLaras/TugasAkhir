@@ -1,8 +1,7 @@
 ﻿﻿import Image from "next/image";
-import {Portrait} from "@/components/portrait";
+import {CafePortrait} from "@/components/portrait";
 import {Rekomendasi} from "@/components/rekomendasi";
-import MapSection from "@/components/MapSection";
-import {TestimoniSection} from "@/components/TestimoniSection"; 
+import {Testimoni} from "@/components/TestimoniSection"; 
 
 const menuItems = [
   { nama: "Roasted Chicken Up", img: "/Landing/Roasted chiken Up with mashed potato.png" },
@@ -37,10 +36,9 @@ export default function Home() {
           </p>
         </div>
       </section>
-      <Portrait />
+      <CafePortrait />
       <Rekomendasi />
-      <MapSection />
-      <TestimoniSection />
+      <Testimoni />
     </main>
   );
 }

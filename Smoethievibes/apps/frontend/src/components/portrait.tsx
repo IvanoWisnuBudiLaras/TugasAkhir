@@ -1,64 +1,156 @@
+// components/CafePortrait.tsx
 "use client";
-import React, { useEffect, useRef } from "react";
 
-const kategoriMenu = [
-  { nama: "Smoothie Bowl", img: "/Landing/Crispy Chiken Up.png", item_count: 8 },
-  { nama: "Jus Detox Segar", img: "/Landing/Roasted chiken Up with mashed potato.png", item_count: 12 },
-  { nama: "Snack Sehat", img: "/Landing/Swedia Meetball.png", item_count: 5 },
-  { nama: "Smoothie Klasik", img: "/Landing/kasir1.jpg", item_count: 15 },
-  { nama: "Menu Musiman", img: "/Landing/strawberry matcha yogurt.jpg", item_count: 4 },
+import React, { useEffect, useRef } from "react";
+import Image from "next/image";
+import Link from "next/link"; 
+
+// Redesain data: Mengganti menu menjadi foto tempat/vibe kafe
+const cafePhotos = [
+  { 
+    title: "Zona Santai", 
+    img: "/Landing/kasir1.jpg", 
+    alt: "Foto meja dan kursi kayu di sudut kafe yang nyaman.",
+    tag: "Interior"
+  },
+  { 
+    title: "Sudut Penuh Cahaya", 
+    img: "/Landing/kasir1.jpg", 
+    alt: "Area bar smoothie dengan cahaya alami yang masuk.",
+    tag: "Bar"
+  },
+  { 
+    title: "Meja Komunal", 
+    img: "/Landing/kasir1.jpg", 
+    // FIX: Menambahkan properti 'alt' yang hilang
+    alt: "Meja panjang komunal untuk bekerja atau berkumpul.", 
+    tag: "Co-Working"
+  },
+  { 
+    title: "Kasir & Display", 
+    img: "/Landing/kasir1.jpg", 
+    // FIX: Menambahkan properti 'alt' yang hilang
+    alt: "Area kasir dengan display makanan ringan sehat.", 
+    tag: "Pelayanan"
+  },
+  { 
+    title: "Teras Kafe", 
+    img: "/Landing/kasir1.jpg", 
+    alt: "Area teras luar ruangan dengan tanaman hijau.",
+    tag: "Outdoor"
+  },
 ];
 
-export function Portrait() {
+// Data diduplikasi untuk menciptakan efek infinity loop
+const duplicatedPhotos = [...cafePhotos, ...cafePhotos];
+
+export function CafePortrait() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
-  // Auto scroll horizontal tiap 2 detik
   useEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
 
-    const interval = setInterval(() => {
-      const maxScroll = container.scrollWidth - container.clientWidth;
+    let animationFrameId: number;
+    // Kecepatan sangat pelan: 0.5 pixels per frame
+    const scrollSpeed = 0.5; 
 
-      if (container.scrollLeft >= maxScroll) {
-        // Reset ke awal jika sudah mentok
-        container.scrollTo({ left: 0, behavior: "smooth" });
-      } else {
-        // Scroll ke kanan 230px (lebar card)
-        container.scrollBy({ left: 230, behavior: "smooth" });
-      }
-    }, 2000);
+    // Total lebar konten asli (setengah dari lebar scroll total)
+    let singleSetWidth = 0;
 
-    return () => clearInterval(interval);
+    const calculateWidth = () => {
+        // Menghitung lebar konten duplikat yang sebenarnya setelah di-render
+        if (container.scrollWidth > 0 && container.clientWidth > 0) {
+            singleSetWidth = container.scrollWidth / 2;
+        }
+    };
+    
+    // Fungsi animasi menggunakan requestAnimationFrame
+    const animateScroll = () => {
+        // 1. Hitung ulang lebar (opsional, untuk memastikan lebar)
+        calculateWidth();
+
+        // 2. Scroll ke kiri
+        container.scrollLeft -= scrollSpeed;
+
+        // 3. Cek kondisi reset (ketika set pertama sudah habis digulir)
+        if (container.scrollLeft <= 0) {
+            // Langsung pindah ke awal set kedua (setengah lebar)
+            container.scrollLeft = singleSetWidth;
+        }
+
+        animationFrameId = requestAnimationFrame(animateScroll);
+    };
+
+    // Inisialisasi posisi: mulai dari awal set kedua (midway point)
+    const initializePosition = () => {
+        calculateWidth();
+        if (singleSetWidth > 0) {
+            container.scrollLeft = singleSetWidth;
+            animateScroll();
+        } else {
+            // Jika lebar belum terhitung, coba lagi di frame berikutnya
+            requestAnimationFrame(initializePosition);
+        }
+    };
+    
+    // Mulai inisialisasi
+    requestAnimationFrame(initializePosition);
+
+    // Cleanup function
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
   }, []);
 
   return (
-    <section className="py-16">
-      <h2 className="text-center text-3xl font-bold mb-10">
-        Jelajahi Hidangan Berdasarkan Kategori
-      </h2>
+    <section className="py-16 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 className="text-center text-4xl font-extrabold text-gray-900 mb-4">
+          Rasakan Vibe Kami
+        </h2>
+        <p className="text-center text-lg text-gray-600 mb-12 max-w-2xl mx-auto">
+          Tempat yang sempurna untuk ngopi, bekerja, atau sekadar menikmati smoothie terbaik di kota.
+        </p>
 
-      <div
-        ref={scrollRef}
-        className="flex overflow-x-auto gap-6 px-4 scrollbar-hide scroll-smooth"
-      >
-        {kategoriMenu.map((item, i) => (
-          <div
-            key={i}
-            className="min-w-[230px] cursor-pointer hover:scale-[1.02] transition-transform duration-300"
-          >
-            <div className="w-full h-60 rounded-xl overflow-hidden shadow-lg">
-              <img
-                src={item.img}
-                alt={item.nama}
-                className="w-full h-full object-cover"
-              />
+        {/* Horizontal Scroll Gallery */}
+        <div
+          ref={scrollRef}
+          // Hapus scroll-smooth karena animasi dikontrol oleh rAF
+          className="flex overflow-x-hidden gap-6 pb-6 scrollbar-hide" 
+        >
+          {/* Mapping ke duplicatedPhotos */}
+          {duplicatedPhotos.map((item, i) => (
+            <div
+              key={i} // Key unik untuk setiap item duplikat
+              className="min-w-[280px] w-[280px] h-[350px] bg-white rounded-xl shadow-xl overflow-hidden cursor-pointer 
+                         hover:shadow-2xl transition-all duration-300 relative group"
+            >
+              
+              {/* Image */}
+              <div className="w-full h-full relative">
+                <Image
+                  src={item.img}
+                  // Menggunakan properti alt yang kini dipastikan ada
+                  alt={item.alt || item.title} 
+                  fill
+                  sizes="(max-width: 768px) 50vw, 25vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              </div>
+
+              {/* Overlay / Caption */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent p-5 flex flex-col justify-end">
+                <span className="text-xs font-medium text-white/70 uppercase tracking-widest mb-1">
+                    {item.tag}
+                </span>
+                <h3 className="text-xl font-bold text-white leading-tight">
+                  {item.title}
+                </h3>
+              </div>
             </div>
-
-            <p className="mt-3 font-semibold text-center">{item.nama}</p>
-            <p className="text-center text-sm text-gray-500">{item.item_count} item</p>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );

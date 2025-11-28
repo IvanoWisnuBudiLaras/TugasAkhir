@@ -11,6 +11,8 @@ import {
   User,
   LogOut,
   Settings,
+  ChevronDown, 
+  Info, // <--- Sudah di-import
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -25,11 +27,20 @@ type UserProfile = {
   role?: string;
 };
 
+// Definisikan kategori untuk dropdown
+const categories = [
+  { name: "Semua Menu", href: "/Kategori" }, 
+  { name: "Makanan", href: "/Kategori/makanan" },
+  { name: "Minuman", href: "/Kategori/minuman" },
+  { name: "Smoothie", href: "/Kategori/smoothie" },
+];
+
 export default function Nav() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false); 
 
   // On mount, check if user is authenticated and fetch profile
   useEffect(() => {
@@ -97,9 +108,45 @@ export default function Nav() {
             <span className="text-xl font-semibold tracking-wide text-black">Smoethie Vibe</span>
           </Link>
 
+          {/* Navigasi Utama */}
           <ul className="flex items-center gap-8 text-black/70 text-[15px] font-medium">
             <li className="hover:text-black transition"><Link href="/">Home</Link></li>
-            <li className="hover:text-black transition"><Link href="/Menu">Menu</Link></li>
+            
+            {/* START DROPDOWN KATEGORI */}
+            <li 
+              className="relative"
+              onMouseEnter={() => setIsCategoryOpen(true)}
+              onMouseLeave={() => setIsCategoryOpen(false)}
+            >
+              <button className="flex items-center gap-1 hover:text-black transition focus:outline-none">
+                Kategori
+                <ChevronDown size={16} className={`transform transition-transform ${isCategoryOpen ? 'rotate-180' : 'rotate-0'}`} />
+              </button>
+
+              {isCategoryOpen && (
+                <div className="
+                  absolute top-full left-1/2 -translate-x-1/2 mt-3 w-40
+                  bg-white rounded-lg shadow-xl border border-black/10
+                  overflow-hidden
+                ">
+                  {categories.map((item) => (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={() => setIsCategoryOpen(false)} 
+                      className="block px-4 py-2 text-sm text-black/80 hover:bg-gray-100 transition"
+                    >
+                      {item.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </li>
+            {/* END DROPDOWN KATEGORI */}
+
+            {/* TAMBAHAN 1: Tautan 'Tentang' di Desktop */}
+            <li className="hover:text-black transition"><Link href="/Tentang">Tentang</Link></li>
+            
             <li className="hover:text-black transition"><Link href="/Contact">Contact</Link></li>
             {isLoggedIn && <li className="hover:text-black transition"><Link href="/Profile">Profile</Link></li>}
             {isAdmin && <li className="hover:text-black transition"><Link href="/admin/dashboard">Admin Dashboard</Link></li>}
@@ -179,7 +226,11 @@ export default function Nav() {
         z-50
       ">
         <NavItem href="/" label="Home" icon={<Home />} />
-        <NavItem href="/Menu" label="Menu" icon={<Menu />} />
+        <NavItem href="/Kategori" label="Menu" icon={<Menu />} /> 
+        
+        {/* TAMBAHAN 2: Tautan 'Tentang' di Mobile */}
+        <NavItem href="/Tentang" label="Tentang" icon={<Info />} /> 
+        
         <NavItem href="/Contact" label="Contact" icon={<MessageSquare />} />
         {isLoggedIn && <NavItem href="/Profile" label="Profile" icon={<User />} />}
         {isAdmin && <NavItem href="/admin/dashboard" label="Admin" icon={<Settings />} />}

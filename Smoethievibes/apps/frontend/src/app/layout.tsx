@@ -6,6 +6,7 @@ import client from '../lib/apollo-client';
 import { usePathname } from "next/navigation";
 import Nav from "@/components/Nav";
 import Footer from "@/components/footer";
+import { CartProvider } from "@/app/Context/CartContext";
 
 export default function RootLayout({
   children,
@@ -22,11 +23,14 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body>
-        <ApolloProvider client={client}>
+        <CartProvider>
+         <ApolloProvider client={client}>
           {!hideNav && <Nav />}
           {children}
           <Footer />
-        </ApolloProvider>
+         </ApolloProvider>
+        </CartProvider>
+        
       </body>
     </html>
   );
