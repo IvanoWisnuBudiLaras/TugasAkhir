@@ -15,9 +15,10 @@ const fullMenuData = [
     // ... data menu lainnya
 ];
 
-export default function KategoriDetailPage({ params }: { params: { id: string } }) {
-    const kategoriTitle = params.id.charAt(0).toUpperCase() + params.id.slice(1);
-    
+export default function KategoriDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = React.use(params);
+    const kategoriTitle = id.charAt(0).toUpperCase() + id.slice(1);
+
     return (
         <div className="min-h-screen pt-24 pb-12 bg-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -49,7 +50,7 @@ export default function KategoriDetailPage({ params }: { params: { id: string } 
                                 <h3 className="font-semibold text-lg text-gray-900 truncate">
                                     {item.name}
                                 </h3>
-                                
+
                                 <div className="flex items-center justify-between mt-1 mb-3">
                                     <p className="text-sm flex items-center gap-1 text-yellow-600">
                                         <Star size={14} fill="yellow" className="text-yellow-500" />
@@ -59,7 +60,7 @@ export default function KategoriDetailPage({ params }: { params: { id: string } 
                                         {item.kategori}
                                     </span>
                                 </div>
-                                
+
                                 {/* Harga dan Tombol Keranjang BARU */}
                                 <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                                     <p className="text-xl font-extrabold text-orange-500">
