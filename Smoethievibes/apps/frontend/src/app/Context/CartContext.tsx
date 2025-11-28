@@ -1,7 +1,7 @@
 // context/CartContext.tsx
 "use client";
 
-import React, { createContext, useContext, useState, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 
 // Tipe data untuk item keranjang
 interface CartItem {
@@ -27,6 +27,11 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: ReactNode }) => {
     // Gunakan state yang sama dari halaman Keranjang Anda
     const [items, setItems] = useState<CartItem[]>([]); 
+
+    // Log items to console whenever they change
+    useEffect(() => {
+        console.log("Cart items updated:", items);
+    }, [items]);
 
     // Hitung total item untuk badge
     const totalItems = useMemo(() => {

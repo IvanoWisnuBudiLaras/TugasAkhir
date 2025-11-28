@@ -15,6 +15,8 @@ import {
   Info, // <--- Sudah di-import
 } from "lucide-react";
 
+import { CartIcon } from "./CartIcon";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 type UserProfile = {
@@ -153,7 +155,8 @@ export default function Nav() {
           </ul>
 
           {/* CTA Buttons (Sign In or Logout) */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <CartIcon />
             {!loading && (
               isLoggedIn ? (
                 <button
@@ -226,8 +229,8 @@ export default function Nav() {
         z-50
       ">
         <NavItem href="/" label="Home" icon={<Home />} />
-        <NavItem href="/Kategori" label="Menu" icon={<Menu />} />
-
+        <NavItem href="/Kategori" label="Menu" icon={<Menu />} /> 
+        
         {/* TAMBAHAN 2: Tautan 'Tentang' di Mobile */}
         <NavItem href="/Tentang" label="Tentang" icon={<Info />} />
 

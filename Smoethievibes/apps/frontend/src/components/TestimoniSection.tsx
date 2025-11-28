@@ -55,7 +55,7 @@ export function Testimoni() {
         </h2>
 
         <p className="text-center text-lg text-gray-600 mb-12 max-w-2xl mx-auto">
-          Lihat ulasan jujur tentang kelezatan menu dan kenyamanan *vibe* kafe SmoethieVibe.
+          Lihat ulasan jujur tentang kelezatan menu dan kenyamanan vibe kafe SmoethieVibe.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
