@@ -3,15 +3,7 @@ import {CafePortrait} from "@/components/portrait";
 import {Rekomendasi} from "@/components/rekomendasi";
 import {Testimoni} from "@/components/TestimoniSection"; 
 
-const menuItems = [
-  { nama: "Roasted Chicken Up", img: "/Landing/Roasted chiken Up with mashed potato.png" },
-  { nama: "Strawberry Matcha Yogurt", img: "/Landing/strawberry matcha yogurt.jpg" },
-  { nama: "Dimsum Mentai", img: "/Landing/placeholder.png" },
-];
-
-const cafePlace = [
-  { nama: "Kasir", img: "/Landing/kasir1.jpg" },
-];
+// page content: hero, portrait, recommendations, testimonials
 
 export default function Home() {
   return (

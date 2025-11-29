@@ -70,7 +70,7 @@ export function Testimoni() {
               <div className="relative mb-5">
                 <Quote className="absolute -top-4 -left-3 w-8 h-8 text-green-200 opacity-70 rotate-180" />
                 <p className="text-gray-700 leading-relaxed italic relative z-10">
-                    "{t.pesan}"
+                  &quot;{t.pesan}&quot;
                 </p>
                 <Quote className="absolute bottom-0 right-0 w-8 h-8 text-green-200 opacity-70" />
               </div>

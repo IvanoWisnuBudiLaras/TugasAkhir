@@ -15,15 +15,39 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get('jwt.secret'),
+        secret: configService.get('JWT_SECRET'),
         signOptions: {
-          expiresIn: configService.get('jwt.expiresIn'),
+          expiresIn: configService.get('JWT_EXPIRES_IN') || '7d',
         },
       }),
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthResolver, GoogleStrategy, JwtStrategy],
+  providers: [
+    AuthService, 
+    AuthResolver, 
+    JwtStrategy,
+    {
+      provide: GoogleStrategy,
+      useFactory: (configService: ConfigService, authService: AuthService) => {
+        const clientID = configService.get('GOOGLE_CLIENT_ID');
+        const clientSecret = configService.get('GOOGLE_CLIENT_SECRET');
+        
+        // Only provide GoogleStrategy if credentials are properly configured
+        if (clientID && clientSecret && 
+            clientID !== 'YOUR_GOOGLE_CLIENT_ID_HERE' && 
+            clientID !== 'disable' &&
+            clientSecret !== 'YOUR_GOOGLE_CLIENT_SECRET_HERE' && 
+            clientSecret !== 'disable') {
+          return new GoogleStrategy(configService, authService);
+        }
+        
+        // Return null if Google OAuth is disabled
+        return null;
+      },
+      inject: [ConfigService, AuthService],
+    }
+  ],
   exports: [AuthService],
 })
 export class AuthModule { }

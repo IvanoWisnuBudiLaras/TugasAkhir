@@ -1,11 +1,8 @@
-// Kategori/[id]/page.tsx (Contoh simulasi struktur file)
-
-"use client";
-
 import React from 'react';
 import Image from 'next/image';
 import { Star } from 'lucide-react';
-import { CartButton } from '@/components/CartButton'; // Asumsikan lokasi CartButton
+import { CartButton } from '@/components/CartButton';
+import { Metadata } from 'next';
 
 // Data Produk (Disesuaikan agar merepresentasikan daftar menu di halaman kategori)
 const fullMenuData = [
@@ -15,8 +12,24 @@ const fullMenuData = [
     // ... data menu lainnya
 ];
 
-export default function KategoriDetailPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = React.use(params);
+type Props = {
+    params: { id: string }
+}
+
+export async function generateMetadata(
+    { params }: Props,
+): Promise<Metadata> {
+    const id = params.id;
+    const title = id.charAt(0).toUpperCase() + id.slice(1);
+
+    return {
+        title: `Menu ${title} - SmoethieVibe`,
+        description: `Jelajahi pilihan ${title} terbaik kami. Segar, sehat, dan lezat.`,
+    }
+}
+
+export default function KategoriDetailPage({ params }: Props) {
+    const { id } = params;
     const kategoriTitle = id.charAt(0).toUpperCase() + id.slice(1);
 
     return (

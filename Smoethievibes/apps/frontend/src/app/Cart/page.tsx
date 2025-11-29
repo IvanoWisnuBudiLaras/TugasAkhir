@@ -1,5 +1,7 @@
 "use client";
 import React, { useMemo, useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
 import { Trash2, Minus, Plus, ShoppingCart, ArrowRight, CheckCircle } from 'lucide-react';
 import { useCart } from '@/app/Context/CartContext';
 
@@ -35,12 +37,12 @@ export default function CartPage() {
                 <ShoppingCart size={64} className="text-gray-400 mb-6" />
                 <h1 className="text-3xl font-bold text-gray-800 mb-2">Keranjang Anda Kosong</h1>
                 <p className="text-gray-600 mb-8">Saatnya mengisi keranjang dengan menu sehat!</p>
-                <a 
-                    href="/Kategori" // Menggunakan <a> standar, bukan <Link>
+                <Link
+                    href="/Kategori"
                     className="flex items-center gap-2 bg-green-600 text-white font-semibold px-6 py-3 rounded-full hover:bg-green-700 transition shadow-lg"
                 >
                     Lihat Semua Menu
-                </a>
+                </Link>
             </div>
         );
     }
@@ -74,15 +76,13 @@ export default function CartPage() {
                                 <div className="flex items-center gap-4">
                                     {/* Gambar Produk (Menggunakan <img> standar) */}
                                     <div className="w-16 h-16 relative rounded-lg overflow-hidden flex-shrink-0">
-                                        <img 
-                                            src={item.img} 
-                                            alt={item.name} 
-                                            className="object-cover w-full h-full" 
-                                            // Fallback jika gambar simulasi tidak dimuat
-                                            onError={(e) => {
-                                                e.currentTarget.onerror = null; 
-                                                e.currentTarget.src = `https://placehold.co/64x64/E0F7FA/000?text=Menu`;
-                                            }}
+                                        <Image
+                                            src={item.img || '/placeholder.png'}
+                                            alt={item.name}
+                                            width={64}
+                                            height={64}
+                                            className="object-cover w-full h-full"
+                                            unoptimized={true}
                                         />
                                     </div>
                                     
@@ -161,14 +161,29 @@ export default function CartPage() {
                         {/* Tombol Checkout */}
                         <button 
                             onClick={handleCheckout}
-                            className="w-full flex items-center justify-center gap-2 bg-green-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-green-700 transition shadow-lg text-lg"
+                            className="w-full flex items-center justify-center gap-2 bg-green-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-green-700 transition shadow-lg text-lg mb-3"
                         >
                             Lanjutkan Checkout
                             <ArrowRight size={20} />
                         </button>
-                        
+
+                        {/* WhatsApp Payment */}
+                        <button
+                            onClick={() => {
+                                // Build message
+                                const lines = cartItems.map(it => `${it.quantity}x ${it.name} - Rp ${(it.price * it.quantity).toLocaleString('id-ID')}`);
+                                const totalLine = `Total: Rp ${cartTotal.toLocaleString('id-ID')}`;
+                                const msg = encodeURIComponent(`Halo SmoethieVibe,%0ASaya ingin memesan:%0A${lines.join('%0A')}%0A%0A${totalLine}%0A%0ASilakan hubungi saya untuk konfirmasi.`);
+                                const waUrl = `https://wa.me/?text=${msg}`;
+                                window.open(waUrl, '_blank');
+                            }}
+                            className="w-full flex items-center justify-center gap-2 bg-green-800 text-white font-semibold px-6 py-3 rounded-xl hover:bg-green-900 transition shadow-lg text-lg"
+                        >
+                            Bayar via WhatsApp
+                        </button>
+
                         <p className="text-center text-xs text-gray-500 mt-4">
-                            Biaya akan dihitung final di halaman pembayaran.
+                            Biaya akan dihitung final di halaman pembayaran. Pilih WhatsApp untuk memesan via chat.
                         </p>
                     </div>
 

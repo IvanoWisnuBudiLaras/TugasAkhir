@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const API_URL = "http://localhost:3001";
+import DashboardGraph from "./DashboardGraph";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -91,8 +92,12 @@ export default function AdminDashboard() {
         </div>
 
         <div className="bg-white border rounded-xl p-6 shadow-sm h-64">
-          <h3 className="font-semibold mb-2">Sales Chart</h3>
-          <p className="text-sm text-gray-500">Chart will be added here.</p>
+          <DashboardGraph data={[
+            { name: 'Users', value: stats.totalUsers },
+            { name: 'Products', value: stats.totalProducts },
+            { name: 'Orders', value: stats.totalOrders },
+            { name: 'Revenue', value: stats.totalRevenue },
+          ]} />
         </div>
       </div>
     </div>
