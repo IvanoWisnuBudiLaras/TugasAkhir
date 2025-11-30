@@ -10,7 +10,7 @@
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist",
+    "clean": "del /q /s dist 2>nul || rmdir /s /q dist 2>nul || exit 0",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:studio": "prisma studio"
