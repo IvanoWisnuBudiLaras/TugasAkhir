@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import "@/src/styles/globals.css";
+import "@/styles/globals.css";
 import { usePathname } from "next/navigation";
 import Nav from "@/src/components/Nav";
 import Footer from "@/src/components/footer";
@@ -13,15 +13,18 @@ export default function RootLayout({
   const pathname = usePathname();
 
   const hideNav =
+    pathname.startsWith("/auth") ||
     pathname.startsWith("/Auth") ||
     pathname.startsWith("/admin");
 
   return (
     <html lang="id">
       <body>
-        {!hideNav && <Nav />}
-        {children}
-        <Footer />
+        <ApolloProvider client={client}>
+          {!hideNav && <Nav />}
+          {children}
+          <Footer />
+        </ApolloProvider>
       </body>
     </html>
   );

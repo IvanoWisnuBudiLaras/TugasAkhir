@@ -13,7 +13,7 @@ const cafePlace = [
 export default function Home() {
   return (
   <main className="min-h-screen bg-white">
-    <section className="relative w-full h-[500px]">
+    <section className="relative w-full h-[695px]">
       <Image
       src="/Landing/kasir1.jpg"
       alt="Smoethie Vibes by Chilla"
@@ -22,11 +22,11 @@ export default function Home() {
       />
       
       <div className="absolute inset-20 font-serif flex flex-col gap-3">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-snug text-white">
+        <h1 className="text-center text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-snug text-white">
           Welcome <br /> Smoethie Vibes
         </h1>
         
-        <p className="text-sm sm:text-base md:text-lg lg:text-xl font-light text-white">
+        <p className="text-center text-sm sm:text-base md:text-lg lg:text-xl font-light text-white">
         Cafe Smoethievibes menyediakan berbagai healthy food sejak 2023. <br />
         Senin – Kamis : 07.30 - 22.00 WIB <br />
         Weekend : 07.30 - 22.30 WIB
