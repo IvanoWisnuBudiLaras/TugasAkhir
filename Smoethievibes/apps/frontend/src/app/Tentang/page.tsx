@@ -2,7 +2,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Coffee, Heart, Leaf, Sun, Zap } from "lucide-react";
 
 export default function AboutPage() {

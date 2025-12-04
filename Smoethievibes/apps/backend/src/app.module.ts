@@ -8,17 +8,20 @@ import { OrderModule } from './modules/order/order.module';
 import { ExportModule } from './exports/export.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { AppController } from './app.controller';
+import { EmailModule } from './modules/email/email.module';
 import {
   jwtConfig,
   corsConfig,
   swaggerAppConfig
 } from './config';
 import messagesConfig from './config/messages.config';
+import { validate } from './config/env.validation';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      validate,
       load: [
         jwtConfig,
         messagesConfig,
@@ -33,6 +36,7 @@ import messagesConfig from './config/messages.config';
     OrderModule,
     ExportModule,
     DashboardModule,
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [],

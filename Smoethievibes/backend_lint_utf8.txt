@@ -1,0 +1,8 @@
+﻿apps/backend                             | ÔÇëWARNÔÇë The field "pnpm.overrides" was found in C:\Pemograman\Project\App\TugasAkhir\Smoethievibes\apps\backend/package.json. This will not take effect. You should configure "pnpm.overrides" at the root of the workspace instead.
+
+> @smoethievibes/backend@1.0.0 lint C:\Pemograman\Project\App\TugasAkhir\Smoethievibes\apps\backend
+> eslint "{src,apps,libs}/**/*.ts" --fix
+
+C:\Pemograman\Project\App\TugasAkhir\Smoethievibes\apps\backend:
+ÔÇëERR_PNPM_RECURSIVE_RUN_FIRST_FAILÔÇë @smoethievibes/backend@1.0.0 lint: `eslint "{src,apps,libs}/**/*.ts" --fix`
+Exit status 2

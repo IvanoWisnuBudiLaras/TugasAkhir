@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from 'next/image';
 
 const API_URL = "http://localhost:3001";
 
@@ -65,11 +66,16 @@ export default function ProductsPage() {
               key={p.id}
               className="bg-white border rounded-xl shadow-sm p-4 hover:shadow-md transition"
             >
-              <img
-                src={p.image || "/placeholder.png"}
-                alt={p.name}
-                className="rounded-lg h-40 w-full object-cover mb-4"
-              />
+              <div className="rounded-lg h-40 w-full overflow-hidden mb-4">
+                <Image
+                  src={p.image || '/placeholder.png'}
+                  alt={p.name}
+                  width={400}
+                  height={160}
+                  className="object-cover w-full h-full"
+                  unoptimized={true}
+                />
+              </div>
 
               <h3 className="font-semibold text-lg">{p.name}</h3>
               <p className="text-gray-500 text-sm">Rp {p.price.toLocaleString()}</p>

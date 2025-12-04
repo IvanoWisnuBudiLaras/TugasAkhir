@@ -135,27 +135,24 @@ export default function CallbackPage() {
                     We only need your name to finish setting up your account. You can add more details later.
                 </p>
 
-                <div className="mb-4 flex items-center gap-4">
-                    <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                <div className="mb-6 flex flex-col items-center gap-4">
+                    <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-200 relative">
                         {avatar ? (
-                            // next/image requires externally allowed domains configured in next.config.js in production,
-                            // in dev this works with a full URL. If this errors, consider replacing with an <img /> tag.
-                            <Image src={avatar} alt="avatar" width={80} height={80} />
+                            <Image src={avatar} alt="avatar" width={96} height={96} className="w-full h-full object-cover" unoptimized={true} />
                         ) : (
-                            <div className="text-gray-400">No avatar</div>
+                            <span className="text-gray-400 text-xs text-center px-2">No Avatar</span>
                         )}
                     </div>
-                    {avatar && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setAvatar(avatar);
-                            }}
-                            className="px-3 py-1 rounded bg-green-600 text-white"
-                        >
-                            Use Google
-                        </button>
-                    )}
+                    <div className="w-full">
+                        <label className="block mb-2 text-sm font-medium text-gray-700">Avatar URL</label>
+                        <input
+                            value={avatar}
+                            onChange={(e) => setAvatar(e.target.value)}
+                            placeholder="https://example.com/avatar.jpg"
+                            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-sm"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Paste a direct link to an image.</p>
+                    </div>
                 </div>
 
                 <label className="block mb-2 text-sm font-medium text-gray-700">Name *</label>
@@ -180,12 +177,7 @@ export default function CallbackPage() {
                     className="w-full p-3 border rounded mb-4"
                 />
 
-                <label className="block mb-2 text-sm font-medium text-gray-700">Avatar URL (optional)</label>
-                <input
-                    value={avatar}
-                    onChange={(e) => setAvatar(e.target.value)}
-                    className="w-full p-3 border rounded mb-6"
-                />
+
 
                 <button
                     type="submit"

@@ -12,10 +12,10 @@ export default function Footer() {
   // Handler untuk simulasi subscribe newsletter
   const handleSubscribe = () => {
     if (email && email.includes('@')) {
-        alert(`Terima kasih! Email '${email}' telah didaftarkan untuk newsletter SmoethieVibe.`);
-        setEmail('');
+      alert(`Terima kasih! Email '${email}' telah didaftarkan untuk newsletter SmoethieVibe.`);
+      setEmail('');
     } else {
-        alert("Mohon masukkan alamat email yang valid.");
+      alert("Mohon masukkan alamat email yang valid.");
     }
   };
 
@@ -45,6 +45,7 @@ export default function Footer() {
             <input
               type="email"
               placeholder="Email Anda"
+              aria-label="Alamat Email untuk Newsletter"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2 rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-green-500 transition text-gray-800"
@@ -53,24 +54,25 @@ export default function Footer() {
               type="button"
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center"
               onClick={handleSubscribe}
+              aria-label="Subscribe Newsletter"
             >
-              <Mail size={18} />
+              <Mail size={18} aria-hidden="true" />
             </button>
           </div>
 
           {/* Social Media Icons */}
           <div className="flex gap-4 mt-8">
             <Link href="#" aria-label="Instagram">
-                <Instagram className="text-gray-500 hover:text-green-600 cursor-pointer transition" size={24} />
+              <Instagram className="text-gray-500 hover:text-green-600 cursor-pointer transition" size={24} />
             </Link>
             <Link href="#" aria-label="YouTube">
-                <Youtube className="text-gray-500 hover:text-red-600 cursor-pointer transition" size={24} />
+              <Youtube className="text-gray-500 hover:text-red-600 cursor-pointer transition" size={24} />
             </Link>
             <Link href="#" aria-label="Facebook">
-                <Facebook className="text-gray-500 hover:text-blue-600 cursor-pointer transition" size={24} />
+              <Facebook className="text-gray-500 hover:text-blue-600 cursor-pointer transition" size={24} />
             </Link>
             <Link href="#" aria-label="Lokasi Kafe">
-                <MapPin className="text-gray-500 hover:text-orange-500 cursor-pointer transition" size={24} />
+              <MapPin className="text-gray-500 hover:text-orange-500 cursor-pointer transition" size={24} />
             </Link>
           </div>
         </div>
@@ -118,8 +120,8 @@ export default function Footer() {
 
 // Komponen FooterSection diperbarui untuk menerima href
 interface FooterItem {
-    name: string;
-    href: string;
+  name: string;
+  href: string;
 }
 
 function FooterSection({ title, items }: { title: string; items: FooterItem[] }) {

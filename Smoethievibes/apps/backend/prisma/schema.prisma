@@ -1,42 +1,55 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DATABASE_DIRECT_URL")
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  phone     String?
-  address   String?
-  avatar    String?
-  name      String?
-  role      UserRole @default(CUSTOMER)
-  isActive  Boolean  @default(true)
-  lastLogin DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String    @id @default(cuid())
+  email        String    @unique
+  password     String
+  phone        String?
+  address      String?
+  avatar       String?
+  name         String?
+  role         UserRole  @default(CUSTOMER)
+  isActive     Boolean   @default(true)
+  lastLogin    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  otpCode      String?
+  otpExpiresAt DateTime?
 
   orders Order[]
 
   @@map("users")
 }
 
+model OTP {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  action    String // 'LOGIN' or 'REGISTER'
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@map("otps")
+}
+
 model Category {
-  id          String    @id @default(cuid()) // ID unik kategori
-  name        String    @unique // Nama kategori (unique)
+  id          String   @id @default(cuid()) // ID unik kategori
+  name        String   @unique // Nama kategori (unique)
   description String? // Deskripsi kategori (opsional)
-  createdAt   DateTime  @default(now()) // Waktu pembuatan
-  updatedAt   DateTime  @updatedAt // Waktu update terakhir
+  createdAt   DateTime @default(now()) // Waktu pembuatan
+  updatedAt   DateTime @updatedAt // Waktu update terakhir
 
   products Product[] // Relasi ke produk
 
@@ -54,23 +67,23 @@ model Product {
   createdAt   DateTime @default(now()) // Waktu pembuatan
   updatedAt   DateTime @updatedAt // Waktu update terakhir
 
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade) // Relasi ke kategori
+  category   Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade) // Relasi ke kategori
   orderItems OrderItem[] // Relasi ke item pesanan
 
   @@map("products")
 }
 
 model Order {
-  id         String   @id @default(cuid()) // ID unik order
-  userId     String // ID user pemesan
-  status     OrderStatus @default(PENDING) // Status order (enum OrderStatus)
-  total      Float // Total harga pesanan
-  orderType  OrderType @default(TAKEAWAY) // Tipe order (enum OrderType)
+  id          String      @id @default(cuid()) // ID unik order
+  userId      String // ID user pemesan
+  status      OrderStatus @default(PENDING) // Status order (enum OrderStatus)
+  total       Float // Total harga pesanan
+  orderType   OrderType   @default(TAKEAWAY) // Tipe order (enum OrderType)
   queueNumber Int? // Nomor antrian (opsional)
   tableNumber Int? // Nomor meja (opsional untuk dine-in)
-  notes      String? // Catatan khusus (opsional)
-  createdAt  DateTime @default(now()) // Waktu pemesanan
-  updatedAt  DateTime @updatedAt // Waktu update terakhir
+  notes       String? // Catatan khusus (opsional)
+  createdAt   DateTime    @default(now()) // Waktu pemesanan
+  updatedAt   DateTime    @updatedAt // Waktu update terakhir
 
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade) // Relasi ke user
   orderItems OrderItem[] // Relasi ke item pesanan
@@ -79,7 +92,7 @@ model Order {
 }
 
 model OrderItem {
-  id        String  @id @default(cuid()) // ID unik item order
+  id        String @id @default(cuid()) // ID unik item order
   orderId   String // ID order
   productId String // ID produk
   quantity  Int // Jumlah item yang dipesan
@@ -115,23 +128,23 @@ enum OrderStatus {
 
 // Tipe order: dibawa, makan di tempat, atau delivery
 enum OrderType {
-  TAKEAWAY  // Bawa pulang
-  DINE_IN   // Makan di tempat
-  DELIVERY  // Antar ke rumah
+  TAKEAWAY // Bawa pulang
+  DINE_IN // Makan di tempat
+  DELIVERY // Antar ke rumah
 }
 
 // Tipe produk: minuman, makanan, dessert
 enum ProductType {
-  DRINK    // Minuman
-  FOOD     // Makanan
-  SNACK    // Camilan
+  DRINK // Minuman
+  FOOD // Makanan
+  SNACK // Camilan
 }
 
 // Metode pembayaran: WhatsApp, tunai, COD
 enum PaymentMethod {
-  WHATSAPP  // Transfer via WhatsApp
-  CASH      // Bayar tunai
-  COD       // Cash on delivery
+  WHATSAPP // Transfer via WhatsApp
+  CASH // Bayar tunai
+  COD // Cash on delivery
 }
 
 // === END ENUMS === //
