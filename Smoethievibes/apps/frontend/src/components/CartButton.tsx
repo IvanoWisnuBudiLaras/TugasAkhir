@@ -11,10 +11,11 @@ interface CartButtonProps {
     productName: string;
     productPrice: number; // Tambahkan harga
     productImg: string;   // Tambahkan gambar
+    productStock: number; // Tambahkan stok
 }
 
 // 2. DEFINISI KOMPONEN YANG BENAR (Mengembalikan JSX.Element)
-export function CartButton({ productId, productName, productPrice, productImg }: CartButtonProps): JSX.Element {
+export function CartButton({ productId, productName, productPrice, productImg, productStock }: CartButtonProps): JSX.Element {
     const { addItem } = useCart(); 
 
     const handleAddToCart = () => {
@@ -23,11 +24,25 @@ export function CartButton({ productId, productName, productPrice, productImg }:
             name: productName, 
             price: productPrice, 
             img: productImg, 
-            quantity: 1
+            quantity: 1,
+            stock: productStock
         };
         
         addItem(newItem);
     };
+
+    if (productStock <= 0) {
+        return (
+            <button 
+                disabled
+                className="p-3 bg-gray-300 text-gray-500 rounded-full shadow-inner 
+                           cursor-not-allowed flex items-center justify-center text-xs font-bold"
+                aria-label={`Stok ${productName} habis`}
+            >
+                Habis
+            </button>
+        );
+    }
 
     return (
         <button 

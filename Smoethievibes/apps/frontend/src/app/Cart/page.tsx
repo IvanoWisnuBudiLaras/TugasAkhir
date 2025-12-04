@@ -9,18 +9,50 @@ export default function CartPage() {
     // State untuk notifikasi setelah checkout (mengganti alert)
     const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
 
+    // Nomor WA tujuan (Ganti dengan nomor WA Anda, format internasional tanpa '+')
+    // Contoh: 6281234567890
+    const whatsappNumber = '6285749252364'; 
+
     // Total Harga Otomatis
     const cartTotal = useMemo(() => {
         return cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
     }, [cartItems]);
 
-    // Handler Checkout (Simulasi, tanpa alert)
+    // Fungsi untuk membuat teks pesanan otomatis
+    const createOrderMessage = () => {
+        let message = `*Konfirmasi Pesanan Baru*\n\nHalo, saya ingin memesan menu-menu berikut:\n\n`;
+
+        cartItems.forEach((item, index) => {
+            message += `*${index + 1}. ${item.name}* (x${item.quantity})\n`;
+            message += `     Harga Satuan: Rp ${item.price.toLocaleString('id-ID')}\n`;
+            message += `     Subtotal: Rp ${(item.price * item.quantity).toLocaleString('id-ID')}\n`;
+            message += `------------------------------\n`;
+        });
+
+        message += `\n*TOTAL PEMBAYARAN: Rp ${cartTotal.toLocaleString('id-ID')}*`;
+        message += `\n\nMohon konfirmasi ketersediaan dan proses pesanan saya. Terima kasih!`;
+        return message;
+    };
+
+
+    // Handler Checkout (Mengalihkan ke WhatsApp)
     const handleCheckout = () => {
         if (cartItems.length > 0) {
-            // Mengganti alert dengan pesan notifikasi di UI
-            setCheckoutMessage(`Sukses! Total pesanan Rp ${cartTotal.toLocaleString('id-ID')} Anda akan diproses. Terima kasih!`);
+            const message = createOrderMessage();
             
-            // Di lingkungan nyata, di sini Anda akan memanggil fungsi clearCart()
+            // 1. Enkode pesan agar aman untuk URL
+            const encodedMessage = encodeURIComponent(message);
+            
+            // 2. Buat URL WA
+            const waUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+
+            // 3. Buka link di tab baru
+            window.open(waUrl, '_blank');
+            
+            // 4. Berikan notifikasi di UI
+            setCheckoutMessage("Anda dialihkan ke WhatsApp untuk menyelesaikan pesanan.");
+            
+            // Di lingkungan nyata, di sini Anda akan memanggil fungsi clearCart() setelah pesanan berhasil terkirim.
         } else {
             setCheckoutMessage("Keranjang Anda kosong. Silakan tambahkan menu terlebih dahulu.");
         }
@@ -52,7 +84,8 @@ export default function CartPage() {
                 {/* Custom Notifikasi (Menggantikan alert) */}
                 {checkoutMessage && (
                     <div className={`p-4 mb-6 rounded-lg shadow-md flex items-center gap-3 
-                                     ${checkoutMessage.startsWith('Sukses') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                    ${checkoutMessage.startsWith('Anda dialihkan') ? 'bg-blue-100 text-blue-700' : 
+                                    checkoutMessage.startsWith('Sukses') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                         <CheckCircle size={20} />
                         <p className="font-medium">{checkoutMessage}</p>
                     </div>
@@ -72,13 +105,12 @@ export default function CartPage() {
                                 className="flex items-center bg-white p-4 rounded-xl shadow-md justify-between"
                             >
                                 <div className="flex items-center gap-4">
-                                    {/* Gambar Produk (Menggunakan <img> standar) */}
+                                    {/* Gambar Produk */}
                                     <div className="w-16 h-16 relative rounded-lg overflow-hidden flex-shrink-0">
                                         <img 
                                             src={item.img} 
                                             alt={item.name} 
                                             className="object-cover w-full h-full" 
-                                            // Fallback jika gambar simulasi tidak dimuat
                                             onError={(e) => {
                                                 e.currentTarget.onerror = null; 
                                                 e.currentTarget.src = `https://placehold.co/64x64/E0F7FA/000?text=Menu`;
@@ -158,17 +190,17 @@ export default function CartPage() {
                             </div>
                         </div>
 
-                        {/* Tombol Checkout */}
+                        {/* Tombol Checkout (Sekarang mengarah ke WA) */}
                         <button 
                             onClick={handleCheckout}
                             className="w-full flex items-center justify-center gap-2 bg-green-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-green-700 transition shadow-lg text-lg"
                         >
-                            Lanjutkan Checkout
+                            Pesan via WhatsApp
                             <ArrowRight size={20} />
                         </button>
                         
                         <p className="text-center text-xs text-gray-500 mt-4">
-                            Biaya akan dihitung final di halaman pembayaran.
+                            Anda akan diarahkan ke WhatsApp untuk konfirmasi pesanan.
                         </p>
                     </div>
 
