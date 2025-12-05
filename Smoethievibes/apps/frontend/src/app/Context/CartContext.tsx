@@ -10,6 +10,7 @@ interface CartItem {
     price: number;
     quantity: number;
     img: string;
+    stock: number;
 }
 
 // Tipe data untuk Context
@@ -40,16 +41,25 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     // Fungsi untuk menambah item
     const addItem = (newItem: CartItem) => {
+        if (newItem.stock <= 0) {
+            // Optional: Tampilkan notifikasi bahwa stok habis
+            console.warn(`Stok untuk ${newItem.name} habis.`);
+            return; // Hentikan penambahan jika stok 0 atau kurang
+        }
+
         setItems(prevItems => {
             const existingItem = prevItems.find(item => item.id === newItem.id);
             if (existingItem) {
-                // Jika sudah ada, tambahkan kuantitas
+                // Jika sudah ada, tambahkan kuantitas, tapi jangan melebihi stok
+                const newQuantity = existingItem.quantity + newItem.quantity;
                 return prevItems.map(item => 
-                    item.id === newItem.id ? { ...item, quantity: item.quantity + newItem.quantity } : item
+                    item.id === newItem.id 
+                        ? { ...item, quantity: Math.min(newQuantity, item.stock) } // Batasi kuantitas dengan stok
+                        : item
                 );
             } else {
                 // Jika item baru, tambahkan ke array
-                return [...prevItems, { ...newItem, quantity: newItem.quantity || 1 }];
+                return [...prevItems, { ...newItem, quantity: Math.min(newItem.quantity || 1, newItem.stock) }];
             }
         });
     };
@@ -57,9 +67,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     // Fungsi-fungsi lain (updateQuantity, removeItem) dapat disalin dari Cart/page.tsx
     const updateQuantity = (id: number, delta: number) => {
         setItems(prevItems => 
-            prevItems.map(item => 
-                item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-            )
+            prevItems.map(item => {
+                if (item.id === id) {
+                    const newQuantity = item.quantity + delta;
+                    // Batasi kuantitas antara 1 dan stok yang tersedia
+                    return { ...item, quantity: Math.max(1, Math.min(newQuantity, item.stock)) };
+                }
+                return item;
+            })
         );
     };
 
