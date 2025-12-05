@@ -5,14 +5,9 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-    Home,
     Menu,
-    MessageSquare,
-    User,
     LogOut,
-    Settings,
     ChevronDown,
-    Info,
     X, // Tambahkan ikon X untuk menutup menu
 } from "lucide-react";
 
@@ -38,61 +33,6 @@ const categories = [
     { name: "Smoothie", href: "/Kategori/smoothie" },
 ];
 
-// TYPE SAFE NAV ITEM (TSX)
-interface NavItemProps {
-    href: string;
-    label: string;
-    icon: React.ReactNode;
-    onClick?: () => void; // Tambahkan onClick untuk menutup menu mobile
-}
-
-// 📌 NavItem component yang dioptimalkan
-function NavItem({ href, label, icon, onClick }: NavItemProps) {
-    return (
-        <Link
-            href={href}
-            onClick={onClick}
-            className="
-                group
-                flex flex-col items-center gap-1
-                text-[12px]
-                font-medium
-                text-gray-600 hover:text-green-600
-                transition-colors duration-200
-            "
-        >
-            {/* ICON WRAPPER */}
-            <div className="
-                w-11 h-11
-                rounded-2xl
-                flex items-center justify-center
-                bg-gray-100 hover:bg-white
-                border border-gray-200
-                shadow-sm
-                group-hover:scale-105
-                group-hover:shadow-md
-                transition-all duration-300
-            ">
-                <span className="
-                    text-black/70
-                    group-hover:text-green-500
-                    transition
-                ">
-                    {icon}
-                </span>
-            </div>
-
-            {/* LABEL */}
-            <span className="
-                text-black/60
-                group-hover:text-green-500
-                transition
-            ">
-                {label}
-            </span>
-        </Link>
-    );
-}
 
 export default function Nav() {
     const router = useRouter();

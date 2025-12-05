@@ -1,5 +1,7 @@
 "use client";
 import React, { useMemo, useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
 import { Trash2, Minus, Plus, ShoppingCart, ArrowRight, CheckCircle } from 'lucide-react';
 import { useCart } from '@/app/Context/CartContext';
 
@@ -67,12 +69,12 @@ export default function CartPage() {
                 <ShoppingCart size={64} className="text-gray-400 mb-6" />
                 <h1 className="text-3xl font-bold text-gray-800 mb-2">Keranjang Anda Kosong</h1>
                 <p className="text-gray-600 mb-8">Saatnya mengisi keranjang dengan menu sehat!</p>
-                <a 
-                    href="/Kategori" // Menggunakan <a> standar, bukan <Link>
+                <Link 
+                    href="/Kategori"
                     className="flex items-center gap-2 bg-green-600 text-white font-semibold px-6 py-3 rounded-full hover:bg-green-700 transition shadow-lg"
                 >
                     Lihat Semua Menu
-                </a>
+                </Link>
             </div>
         );
     }
@@ -107,14 +109,11 @@ export default function CartPage() {
                                 <div className="flex items-center gap-4">
                                     {/* Gambar Produk */}
                                     <div className="w-16 h-16 relative rounded-lg overflow-hidden flex-shrink-0">
-                                        <img 
+                                        <Image 
                                             src={item.img} 
                                             alt={item.name} 
-                                            className="object-cover w-full h-full" 
-                                            onError={(e) => {
-                                                e.currentTarget.onerror = null; 
-                                                e.currentTarget.src = `https://placehold.co/64x64/E0F7FA/000?text=Menu`;
-                                            }}
+                                            fill
+                                            className="object-cover"
                                         />
                                     </div>
                                     

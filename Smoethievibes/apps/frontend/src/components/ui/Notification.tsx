@@ -236,7 +236,7 @@ const Notification: React.FC<NotificationProps> = ({
         <div className="absolute top-3/4 left-1/4 w-4 h-4 bg-white bg-opacity-20 rounded-full backdrop-blur-sm animate-pulse" style={{ animationDelay: '1.2s' }} />
       </div>
       
-      <style jsx>{`
+      <style>{`
         @keyframes progress {
           from { width: 100%; }
           to { width: 0%; }

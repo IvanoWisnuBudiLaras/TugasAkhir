@@ -13,6 +13,7 @@ type Product = {
   price: number;
   image: string;
   description?: string;
+  stock?: number;
 };
 
 // Fallback product data if backend is not reachable
@@ -53,7 +54,7 @@ export default function DetailPage({ params }: { params: { id: string } }) {
   if (!product) return <div className="p-10 text-center text-red-500">Produk tidak ditemukan!</div>;
 
   const handleAddToCart = () => {
-    addItem({ id: product.id, name: product.title, price: product.price, quantity, img: product.image });
+    addItem({ id: product.id, name: product.title, price: product.price, quantity, img: product.image, stock: product.stock || 0 });
     alert('Produk ditambahkan ke keranjang');
   };
 
