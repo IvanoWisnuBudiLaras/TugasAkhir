@@ -4,6 +4,14 @@ import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from '../auth.service';
 
+/**
+ * @strategy Google OAuth 2.0
+ * @deskripsi Passport strategy untuk Google OAuth 2.0 authentication
+ * @fitur
+ *   - Login/registrasi dengan akun Google
+ *   - Extract user info (email, name, avatar) dari Google profile
+ *   - Auto-create user jika belum terdaftar
+ */
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     private readonly logger = new Logger(GoogleStrategy.name);
@@ -15,7 +23,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         const clientID = configService.get('GOOGLE_CLIENT_ID');
         const clientSecret = configService.get('GOOGLE_CLIENT_SECRET');
 
-        // Call super first to initialize the strategy
+        // @fitur Initialize strategy dengan Google OAuth credentials
         super({
             clientID: clientID || 'disable',
             clientSecret: clientSecret || 'disable',
@@ -23,20 +31,28 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
             scope: ['email', 'profile'],
         });
 
-        // Validate that credentials are configured after super() is called
+        // @validasi Pastikan credentials Google OAuth dikonfigurasi setelah super() dipanggil
         if (!clientID || clientID === 'YOUR_GOOGLE_CLIENT_ID_HERE' || clientID === 'disable') {
-            const message = 'Google OAuth is disabled. Please configure GOOGLE_CLIENT_ID in your .env file';
+            const message = 'Google OAuth disabled. Silakan configure GOOGLE_CLIENT_ID di file .env';
             this.logger.warn(message);
         }
 
         if (!clientSecret || clientSecret === 'YOUR_GOOGLE_CLIENT_SECRET_HERE' || clientSecret === 'disable') {
-            const message = 'Google OAuth is disabled. Please configure GOOGLE_CLIENT_SECRET in your .env file';
+            const message = 'Google OAuth disabled. Silakan configure GOOGLE_CLIENT_SECRET di file .env';
             this.logger.warn(message);
         }
 
-        this.logger.log('Google OAuth Strategy initialized successfully');
+        this.logger.log('Google OAuth Strategy berhasil diinisialisasi');
     }
 
+    /**
+     * @method validate
+     * @deskripsi Validasi user dari Google dan buat user di DB jika belum ada
+     * @param accessToken - Google access token
+     * @param refreshToken - Google refresh token
+     * @param profile - Google profile data
+     * @param done - Passport callback
+     */
     async validate(
         accessToken: string,
         refreshToken: string,
@@ -53,11 +69,11 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
                 accessToken,
             };
 
-            // Validate or create user in DB
+            // @fitur Validasi atau buat user di database
             const validatedUser = await this.authService.validateGoogleUser(user);
             done(null, validatedUser);
         } catch (error) {
-            this.logger.error('Error in Google OAuth validation:', error);
+            this.logger.error('Error dalam Google OAuth validation:', error);
             done(error, false);
         }
     }

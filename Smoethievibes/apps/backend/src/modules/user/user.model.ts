@@ -34,13 +34,12 @@ export class User {
 
   @Field()
   isActive!: boolean;
-
-  @Field({ nullable: true })
+  @Field(() => Date, { nullable: true })
   lastLogin?: Date;
 
-  @Field()
+  @Field(() => Date)
   createdAt!: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt!: Date;
 }

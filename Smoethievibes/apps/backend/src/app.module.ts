@@ -1,5 +1,8 @@
 ﻿﻿import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { GraphQLModule } from '@nestjs/graphql';
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { Request, Response } from 'express';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
@@ -29,13 +32,28 @@ import { validate } from './config/env.validation';
         swaggerAppConfig
       ],
     }),
+    // @fitur Konfigurasi GraphQL Apollo Server untuk schema generation dan playground
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      autoSchemaFile: 'schema.gql',
+      playground: true,
+      introspection: true,
+      context: ({ req, res }: { req: Request; res: Response }) => ({ req, res }),
+    }),
     PrismaModule,
+    // @fitur Autentikasi & otorisasi (JWT + Google OAuth)
     AuthModule,
+    // @fitur Manajemen pengguna & operasi profil
     UserModule,
+    // @fitur Katalog produk & manajemen inventaris
     ProductModule,
+    // @fitur Pemrosesan & pelacakan pesanan
     OrderModule,
+    // @fitur Fungsionalitas ekspor data
     ExportModule,
+    // @fitur Dashboard admin & analitik
     DashboardModule,
+    // @fitur Layanan email (OTP, notifikasi)
     EmailModule,
   ],
   controllers: [AppController],

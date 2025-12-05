@@ -1,4 +1,4 @@
-import { ObjectType, Field, ID, Float } from '@nestjs/graphql';
+import { ObjectType, Field, ID, Float, Int } from '@nestjs/graphql';
 import { ApiResponseDto } from '../../../common/dto/api-response.dto';
 
 @ObjectType()
@@ -9,28 +9,28 @@ export class ProductResponse {
   @Field()
   name!: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   description?: string;
 
   @Field(() => Float)
   price!: number;
 
-  @Field()
+  @Field(() => String)
   category!: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   image?: string;
 
-  @Field()
+  @Field(() => Int)
   stock!: number;
 
   @Field()
   isActive!: boolean;
 
-  @Field()
+  @Field(() => Date)
   createdAt!: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt!: Date;
 }
 

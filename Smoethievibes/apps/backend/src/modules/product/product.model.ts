@@ -5,27 +5,29 @@ export class Product {
   @Field(() => ID)
   id!: string;
 
-  @Field()
+  @Field(() => String)
   name!: string;
 
-  @Field({ nullable: true })
+  // @deskripsi Gunakan tipe eksplisit untuk field nullable agar reflectMetadata valid
+  @Field(() => String, { nullable: true })
   description!: string | null;
 
   @Field(() => Float)
   price!: number;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   image!: string | null;
 
   @Field(() => Int)
   stock!: number;
 
-  @Field()
+  @Field(() => String)
   categoryId!: string;
 
-  @Field()
+  // @deskripsi Gunakan tipe eksplisit untuk Date agar GraphQL mengenali scalar Date
+  @Field(() => Date)
   createdAt!: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt!: Date;
 }

@@ -1,8 +1,9 @@
 ﻿
 import "@/styles/globals.css";
-// ApolloProvider and client are used in client-side Providers component
+// @fitur ApolloProvider dan client dipindahkan ke Providers client component
 import Providers from '@/components/Providers';
 
+// @seo Metadata untuk SEO dan social sharing
 export const metadata = {
   title: {
     default: 'SmoethieVibe - Fresh Smoothies & Healthy Food',
@@ -39,6 +40,7 @@ export const metadata = {
   },
 };
 
+// @komponen Root layout: server component menyediakan metadata dan static content
 export default function RootLayout({
   children,
 }: {

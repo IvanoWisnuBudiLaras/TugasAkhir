@@ -17,6 +17,33 @@ interface ValidationConfig {
   enableImplicitConversion?: boolean;
 }
 
+// Input sanitization helper
+const sanitizeInput = (value: any): any => {
+  if (typeof value === 'string') {
+    // Remove potentially dangerous characters
+    return value
+      .trim()
+      .replace(/[<>\"'&]/g, '') // Remove HTML entities and quotes
+      .replace(/javascript:/gi, '') // Remove javascript: protocol
+      .replace(/on\w+\s*=/gi, ''); // Remove event handlers
+  }
+  if (Array.isArray(value)) {
+    return value.map(sanitizeInput);
+  }
+  if (typeof value === 'object' && value !== null) {
+    const sanitized: any = {};
+    for (const key in value) {
+      if (value.hasOwnProperty(key)) {
+        // Sanitize key names too
+        const sanitizedKey = key.replace(/[<>\"'&]/g, '');
+        sanitized[sanitizedKey] = sanitizeInput(value[key]);
+      }
+    }
+    return sanitized;
+  }
+  return value;
+};
+
 @Injectable()
 export class ValidationPipe implements PipeTransform<any> {
   private nestValidationPipe: NestValidationPipe;
@@ -36,11 +63,12 @@ export class ValidationPipe implements PipeTransform<any> {
       return value;
     }
     
-    // Gunakan config yang sudah ada
+    // Sanitize input first
+    const sanitizedValue = sanitizeInput(value);
+    
     try {
-      return await this.nestValidationPipe.transform(value, metadata);
+      return await this.nestValidationPipe.transform(sanitizedValue, metadata);
     } catch (error) {
-      // Custom error handling tetap bisa ditambahkan di sini
       if (error instanceof BadRequestException) {
         throw error;
       }

@@ -23,11 +23,10 @@ export class UserResponse {
 
   @Field()
   isActive!: boolean;
-
-  @Field()
+  @Field(() => Date)
   createdAt!: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt!: Date;
 }
 

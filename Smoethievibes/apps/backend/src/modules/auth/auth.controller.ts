@@ -18,6 +18,23 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 
+/**
+ * @controller auth
+ * @deskripsi REST API endpoints untuk operasi autentikasi
+ * @prefix /auth
+ * @endpoints
+ *   POST   /auth/login              - Autentikasi email/password
+ *   POST   /auth/register           - Registrasi user dengan email
+ *   POST   /auth/verify-otp         - Verifikasi OTP untuk aktivasi akun
+ *   POST   /auth/send-otp           - Minta OTP code via email
+ *   POST   /auth/check-email        - Cek apakah email sudah terdaftar
+ *   GET    /auth/google             - Inisiasi Google OAuth 2.0 flow
+ *   GET    /auth/google/callback    - Google OAuth callback handler
+ *   GET    /auth/me                 - Dapatkan profil user saat ini (memerlukan JWT)
+ *   PATCH  /auth/complete-profile   - Lengkapi profil user setelah registrasi
+ *   PATCH  /auth/update-profile     - Update profil user yang sudah ada
+ *   POST   /auth/logout             - Logout dan catat waktu login terakhir
+ */
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -25,6 +42,13 @@ export class AuthController {
     private readonly configService: ConfigService,
   ) {}
 
+  /**
+   * @endpoint POST /auth/login
+   * @deskripsi Autentikasi user dengan email dan password
+   * @param loginInput - Email dan password credentials
+   * @returns JWT access token dan user profile
+   * @throws BadRequestException - Credentials tidak valid
+   */
   @Post('login')
   async login(@Body() loginInput: LoginInput) {
     try {
@@ -37,10 +61,17 @@ export class AuthController {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new BadRequestException('Login failed');
+      throw new BadRequestException('Login gagal');
     }
   }
 
+  /**
+   * @endpoint POST /auth/register
+   * @deskripsi Registrasi user baru dengan email dan password
+   * @param registerInput - Email, password, dan opsional name
+   * @returns User profile dan konfirmasi OTP terkirim
+   * @throws BadRequestException - Email sudah digunakan atau input tidak valid
+   */
   @Post('register')
   async register(@Body() registerInput: RegisterInput) {
     try {
@@ -53,10 +84,17 @@ export class AuthController {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new BadRequestException('Registration failed');
+      throw new BadRequestException('Registrasi gagal');
     }
   }
 
+  /**
+   * @endpoint POST /auth/verify-otp
+   * @deskripsi Verifikasi kode OTP yang dikirim ke email user
+   * @param body - Email dan kode OTP
+   * @returns JWT access token jika sukses
+   * @throws BadRequestException - OTP tidak valid atau sudah expired
+   */
   @Post('verify-otp')
   async verifyOtp(@Body() body: { email: string; code: string }) {
     try {
@@ -69,10 +107,16 @@ export class AuthController {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new BadRequestException('OTP verification failed');
+      throw new BadRequestException('Verifikasi OTP gagal');
     }
   }
 
+  /**
+   * @endpoint POST /auth/send-otp
+   * @deskripsi Kirim kode OTP ke alamat email
+   * @param body - Email dan tipe action (LOGIN atau REGISTER)
+   * @returns Pesan konfirmasi
+   */
   @Post('send-otp')
   async sendOtp(@Body() body: { email: string; action?: 'LOGIN' | 'REGISTER' }) {
     try {
@@ -189,14 +233,15 @@ export class AuthController {
     try {
       const result = await this.authService.validateGoogleUser(req.user);
       
-      // Redirect to frontend with token
+      // @fitur Redirect ke frontend dengan JWT token (path case-sensitive)
       const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
-      const redirectUrl = `${frontendUrl}/auth/callback?token=${result.access_token}`;
+      const redirectUrl = `${frontendUrl}/Auth/callback?token=${result.access_token}`;
       
       return res.redirect(redirectUrl);
     } catch (error) {
       const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
-      const redirectUrl = `${frontendUrl}/auth/callback?error=google_auth_failed`;
+      const errorMsg = error instanceof Error ? error.message : 'google_auth_failed';
+      const redirectUrl = `${frontendUrl}/Auth/callback?error=${encodeURIComponent(errorMsg)}`;
       
       return res.redirect(redirectUrl);
     }
