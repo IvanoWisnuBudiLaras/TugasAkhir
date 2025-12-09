@@ -26,20 +26,20 @@ async function bootstrap() {
       },
     },
   }));
-  
+
   // CORS - optimized untuk GraphQL subscriptions
   const corsOptions = configService.get('cors');
   app.enableCors({
     ...corsOptions,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-apollo-tracing'],
   });
-  
+
   // Global validation - optimized untuk GraphQL
   // Custom ValidationPipe akan mengambil konfigurasi dari ConfigService
   app.useGlobalPipes(new ValidationPipe(configService));
-  
+
   // Swagger documentation (optional untuk GraphQL)
   const swaggerOptions = configService.get('swagger');
   if (swaggerOptions?.enabled !== false) {
@@ -54,11 +54,11 @@ async function bootstrap() {
   }
 
   const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;
-  
+
   // Health check endpoint - optimized untuk GraphQL & Fly.io
   app.use('/health', (req: Request, res: Response) => {
-    res.status(200).json({ 
-      status: 'ok', 
+    res.status(200).json({
+      status: 'ok',
       timestamp: new Date().toISOString(),
       service: 'smoethievibes-backend',
       graphql: true,
@@ -67,22 +67,22 @@ async function bootstrap() {
       memory: process.memoryUsage(),
     });
   });
-  
+
   // Error handling untuk GraphQL
   process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   });
-  
+
   process.on('uncaughtException', (error) => {
     console.error('Uncaught Exception:', error);
     process.exit(1);
   });
-  
+
   await app.listen(port, '0.0.0.0'); // Bind ke 0.0.0.0 untuk Fly.io
-  
+
   const serverStarted = configService.get('messages.info.serverStarted')?.replace('${port}', port.toString()) || `🚀 Server running on port ${port}`;
   const apiDocs = configService.get('messages.info.apiDocs')?.replace('${port}', port.toString()) || `📚 API Documentation: http://localhost:${port}/api`;
-  
+
   console.log('\n🎯 Smoethievibes GraphQL API');
   console.log(serverStarted);
   console.log(apiDocs);

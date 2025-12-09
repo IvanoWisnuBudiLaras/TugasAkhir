@@ -16,7 +16,21 @@
 .animate-fadeIn {
   animation: fadeIn 0.6s ease-out;
 }
+/* Definisi untuk utility class scrollbar-hide */
+.scrollbar-hide {
+  /* Untuk Firefox */
+  scrollbar-width: none;
+}
 
+/* Untuk Internet Explorer dan Edge */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Untuk Chrome, Safari, dan Opera (WebKit) */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
 @keyframes fadeInSlow {
   from {
     opacity: 0;

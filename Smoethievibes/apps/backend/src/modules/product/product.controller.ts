@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ProductService } from './product.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('products')
+@UseGuards(JwtAuthGuard)
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(private readonly productService: ProductService) { }
 
   @Get()
   async findAll() {

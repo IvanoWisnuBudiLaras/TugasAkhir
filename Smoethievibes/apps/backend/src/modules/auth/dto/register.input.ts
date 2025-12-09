@@ -13,18 +13,23 @@ export class RegisterInput {
   @MinLength(6)
   password!: string;
 
-  @Field()
-  @IsNotEmpty()
+  @Field({ nullable: true })
+  @IsOptional()
   @IsString()
-  name!: string;
+  name?: string;
 
-  @Field()
-  @IsNotEmpty()
+  @Field({ nullable: true })
+  @IsOptional()
   @IsString()
-  phone!: string;
+  phone?: string;
 
   @Field({ nullable: true })
   @IsOptional()
   @IsString()
   address?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  avatar?: string;
 }

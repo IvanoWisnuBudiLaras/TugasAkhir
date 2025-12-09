@@ -24,6 +24,12 @@ export default function AdminLayout({
 
         <nav className="space-y-1">
           <Link
+            href="/"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-200 transition mb-4 border border-gray-200"
+          >
+            <span>← Back to Home</span>
+          </Link>
+          <Link
             href="/admin"
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-200 transition"
           >
