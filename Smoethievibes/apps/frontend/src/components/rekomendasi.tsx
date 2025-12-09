@@ -9,9 +9,9 @@ import { CartButton } from "./CartButton"; // Import CartButton
 
 // Data Produk (Hanya 3 item teratas)
 const menuRekomendasi = [
-    { id: 1, name: "Avocado Salad", kategori: "makanan", price: 25000, img: "/Menu/avocado salad.png", rating: 4.8 },
-    { id: 2, name: "Cocoa Peanut Butter", kategori: "smoothie", price: 30000, img: "/Menu/Cocoa Peanut Butter.jpg", rating: 4.7 },
-    { id: 3, name: "Crispy Chicken UP", kategori: "makanan", price: 28000, img: "/Menu/Crispy Chiken UP.png", rating: 4.9 },
+    { id: 1, name: "Avocado Salad", kategori: "makanan", price: 25000, img: "/Menu/avocado salad.png", rating: 4.8, stock: 10 },
+    { id: 2, name: "Cocoa Peanut Butter", kategori: "smoothie", price: 30000, img: "/Menu/Cocoa Peanut Butter.jpg", rating: 4.7, stock: 15 },
+    { id: 3, name: "Crispy Chicken UP", kategori: "makanan", price: 28000, img: "/Menu/Crispy Chiken UP.png", rating: 4.9, stock: 12 },
 ];
 
 export function Rekomendasi() {
@@ -64,7 +64,7 @@ export function Rekomendasi() {
                         Rp {item.price.toLocaleString("id-ID")}
                     </p>
                     {/* CartButton */}
-                    <CartButton productId={item.id} productName={item.name} productPrice={item.price} productImg={item.img} />
+                    <CartButton productId={item.id} productName={item.name} productPrice={item.price} productImg={item.img} productStock={item.stock || 0} />
                 </div>
               </div>
             </div>

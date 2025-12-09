@@ -107,7 +107,33 @@ export class AuthService {
 
   // Email/password login - return JWT on success
   async login(loginInput: LoginInput) {
-    const user = await this.validateUser(loginInput.email, loginInput.password);
+    // Validasi input dengan lebih ketat
+    if (!loginInput.email || !loginInput.password) {
+      throw new BadRequestException('Email and password are required');
+    }
+    
+    // Sanitasi email
+    const sanitizedEmail = loginInput.email.toLowerCase().trim();
+    
+    // Validasi format email
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(sanitizedEmail)) {
+      throw new BadRequestException('Invalid email format');
+    }
+    
+    // Validasi password (minimal security)
+    if (loginInput.password.length < 8) {
+      throw new BadRequestException('Invalid credentials');
+    }
+    
+    if (loginInput.password.length > 128) {
+      throw new BadRequestException('Invalid credentials');
+    }
+    
+    // Sanitasi password (hapus karakter berbahaya)
+    const sanitizedPassword = loginInput.password.replace(/[<>\"'&;|`]/g, '');
+    
+    const user = await this.validateUser(sanitizedEmail, sanitizedPassword);
     if (!user) {
       const errorMessage =
         this.configService.get('auth.errorMessages.invalidCredentials') ||
@@ -151,6 +177,7 @@ export class AuthService {
     // Cek apakah user sudah terdaftar
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
+      // Jika user belum terdaftar, lempar error khusus agar frontend bisa handle
       throw new BadRequestException('User not found. Please register first.');
     }
 
@@ -289,34 +316,81 @@ export class AuthService {
   async register(registerInput: RegisterInput) {
     const { password, ...userData } = registerInput;
     
-    // Validasi email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Validasi email format dengan regex yang lebih ketat
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(userData.email)) {
-      throw new BadRequestException('Invalid email format');
+      throw new BadRequestException('Invalid email format. Please use a valid email address.');
     }
     
-    // Validasi password strength
-    if (!password || password.length < 6) {
-      throw new BadRequestException('Password must be at least 6 characters long');
+    // Sanitasi email
+    const sanitizedEmail = userData.email.toLowerCase().trim();
+    
+    // Validasi panjang email
+    if (sanitizedEmail.length > 254) {
+      throw new BadRequestException('Email is too long. Maximum 254 characters allowed.');
     }
+    
+    // Validasi password strength yang lebih ketat
+    if (!password || password.length < 8) {
+      throw new BadRequestException('Password must be at least 8 characters long');
+    }
+    
+    if (password.length > 128) {
+      throw new BadRequestException('Password must be less than 128 characters');
+    }
+    
+    // Validasi kompleksitas password
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]/;
+    if (!passwordRegex.test(password)) {
+      throw new BadRequestException('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (!@#$%^&*(),.?":{}|<>)');
+    }
+    
+    // Validasi karakter yang tidak diizinkan (simbol berbahaya)
+    const dangerousChars = /[<>\"'&;|`]/.test(password);
+    if (dangerousChars) {
+      throw new BadRequestException('Password contains invalid characters. Avoid using: < > \" \' & ; | `');
+    }
+    
+    // Validasi nama (hanya huruf dan spasi)
+    if (!userData.name || userData.name.trim().length === 0) {
+      throw new BadRequestException('Name is required');
+    }
+    
+    if (userData.name.length < 2) {
+      throw new BadRequestException('Name must be at least 2 characters long');
+    }
+    
+    if (userData.name.length > 50) {
+      throw new BadRequestException('Name must be less than 50 characters');
+    }
+    
+    // Validasi karakter nama (hanya huruf, spasi, hyphen, dot, dan apostrophe)
+    const nameRegex = /^[a-zA-Z\s\-\.']+$/;
+    if (!nameRegex.test(userData.name)) {
+      throw new BadRequestException('Name can only contain letters, spaces, hyphens, dots, and apostrophes');
+    }
+    
+    // Sanitasi nama
+    const sanitizedName = userData.name.replace(/[^a-zA-Z\s\-\.']/g, '').trim();
     
     // Check if user already exists
-    const existingUser = await this.prisma.user.findUnique({ where: { email: userData.email } });
+    const existingUser = await this.prisma.user.findUnique({ where: { email: sanitizedEmail } });
     if (existingUser) {
       throw new BadRequestException('Email already in use');
     }
     
-    const saltRounds = parseInt(this.configService.get('auth.bcryptSaltRounds') || '10');
+    const saltRounds = parseInt(this.configService.get('auth.bcryptSaltRounds') || '12'); // Naikkan ke 12
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     
     try {
       const user = await this.prisma.user.create({
         data: {
-          ...userData,
-          name: userData.name || null,
+          email: sanitizedEmail,
+          name: sanitizedName || null,
           password: hashedPassword,
           isActive: false, // Default inactive, akan diaktifkan setelah OTP
           role: 'CUSTOMER', // Default role
+          phone: userData.phone ? userData.phone.replace(/[^0-9+\-\s]/g, '').trim() : null,
         },
       });
 

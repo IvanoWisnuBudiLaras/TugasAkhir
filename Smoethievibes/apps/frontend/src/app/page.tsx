@@ -3,12 +3,12 @@ import {CafePortrait} from "@/components/portrait";
 import {Rekomendasi} from "@/components/rekomendasi";
 import {Testimoni} from "@/components/TestimoniSection"; 
 
-// page content: hero, portrait, recommendations, testimonials
-
+// @komponen Halaman utama: hero, portrait, rekomendasi, testimoni
+// @seo Server component untuk static rendering dan SEO optimal
 export default function Home() {
   return (
     <main className="min-h-screen bg-[#FFF9F3]">
-      {/* HERO SECTION */}
+      {/* @ui HERO SECTION: background image + text overlay */}
       <section className="relative w-full h-[680px]">
         <Image
           src="/Landing/kasir1.jpg"
@@ -28,6 +28,7 @@ export default function Home() {
           </p>
         </div>
       </section>
+      {/* @komponen Cafe profile dan rekomendasi produk */}
       <CafePortrait />
       <Rekomendasi />
       <Testimoni />

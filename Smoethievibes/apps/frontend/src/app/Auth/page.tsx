@@ -1,402 +1,357 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { Mail, Lock, Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
+
+// @komponen Auth page - unified email/password form
+// @keamanan Input sanitization and password validation built-in
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export default function AuthPage() {
   const router = useRouter();
-  const [step, setStep] = useState<'email' | 'password' | 'otp'>('email');
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login'); // Detected after email check
+  const [mounted, setMounted] = useState(false);
 
-  // Form States
+  // Form states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [otp, setOtp] = useState("");
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [otpTimer, setOtpTimer] = useState(0); // Timer untuk OTP resend
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  // Prevent hydration mismatch
-  const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
 
-  const handleEmailSubmit = async () => {
-    if (!email) return alert("Please enter your email");
-    if (!email.includes('@')) return alert("Please enter a valid email address");
-    
+  // @keamanan Validate email format
+  const validateEmail = (email: string): boolean => {
+    const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return regex.test(email);
+  };
+
+  // @keamanan Validate password strength (min 8 chars, mixed case, numbers, special chars)
+  const validatePassword = (password: string): { valid: boolean; message?: string } => {
+    if (password.length < 8) {
+      return { valid: false, message: "Password must be at least 8 characters" };
+    }
+    if (!/[A-Z]/.test(password)) {
+      return { valid: false, message: "Password must contain uppercase letter" };
+    }
+    if (!/[a-z]/.test(password)) {
+      return { valid: false, message: "Password must contain lowercase letter" };
+    }
+    if (!/\d/.test(password)) {
+      return { valid: false, message: "Password must contain number" };
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      return { valid: false, message: "Password must contain special character" };
+    }
+    return { valid: true };
+  };
+
+  // @keamanan Sanitize input to prevent XSS
+  const sanitizeInput = (input: string): string => {
+    return input
+      .replace(/[<>\"'&;|`]/g, "")
+      .replace(/javascript:/gi, "")
+      .replace(/on\w+\s*=/gi, "")
+      .trim();
+  };
+
+  // @keamanan Handle login
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!email || !password) {
+      setError("Email and password are required");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError("Invalid email format");
+      return;
+    }
+
     setLoading(true);
     try {
-      // Cek apakah email sudah terdaftar terlebih dahulu
-      const checkResponse = await fetch(`${API_URL}/auth/check-email?email=${encodeURIComponent(email)}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
-      
-      let authMode = 'register';
-      if (checkResponse.ok) {
-        const data = await checkResponse.json();
-        if (data.data?.exists) {
-          authMode = 'login';
-          setAuthMode('login');
-        } else {
-          setAuthMode('register');
-        }
-      }
-
-      // Kirim OTP sesuai dengan mode yang tepat
-      const otpResponse = await fetch(`${API_URL}/auth/send-otp`, {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          email, 
-          action: authMode === 'login' ? 'LOGIN' : 'REGISTER' 
+        body: JSON.stringify({
+          email: sanitizeInput(email.toLowerCase()),
+          password: sanitizeInput(password),
         }),
       });
 
-      if (!otpResponse.ok) {
-        throw new Error('Failed to send OTP');
-      }
-      
-      // Langsung ke step OTP karena OTP sudah dikirim
-      setStep('otp');
-    } catch (error) {
-      console.error(error);
-      alert("Error processing email. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePasswordSubmit = async () => {
-    if (!password) return alert("Please enter password");
-    if (password.length < 6) return alert("Password must be at least 6 characters");
-    if (authMode === 'register' && password !== confirmPassword) {
-      return alert("Passwords do not match");
-    }
-
-    setLoading(true);
-    try {
-      if (authMode === 'register') {
-        // Untuk registrasi baru, langsung kirim data registrasi
-        const response = await fetch(`${API_URL}/auth/register`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-          // Tangani error spesifik dari backend
-          if (data.message?.includes('already in use')) {
-            alert("This email is already registered. Please login instead.");
-            setAuthMode('login');
-            setStep('password');
-            return;
-          }
-          throw new Error(data.message || "Registration failed");
-        }
-
-        // Registrasi berhasil, OTP sudah dikirim sebelumnya
-        alert("Registration successful! Please check your email for OTP.");
-      } else {
-        // Untuk login, coba login dengan password
-        const response = await fetch(`${API_URL}/auth/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-          // Tangani error spesifik
-          if (data.message?.includes('not activated')) {
-            alert("Your account is not activated. Please check your email for OTP verification.");
-            // Kirim OTP ulang untuk aktivasi
-            await fetch(`${API_URL}/auth/send-otp`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email }),
-            });
-            setStep('otp');
-            return;
-          }
-          if (data.message?.includes('Invalid credentials')) {
-            alert("Invalid email or password. Please try again.");
-            return;
-          }
-          throw new Error(data.message || "Login failed");
-        }
-
-        // Login berhasil dengan password, langsung ke halaman callback
-        if (data.access_token) {
-          localStorage.setItem("token", data.access_token);
-          router.push(`/Auth/callback?token=${data.access_token}`);
-          return;
-        }
-      }
-
-      // Pindah ke step OTP untuk verifikasi
-      setStep('otp');
-    } catch (error: unknown) {
-      console.error(error);
-      const message = error instanceof Error ? error.message : String(error);
-      alert(message || "Authentication failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleOtpSubmit = async () => {
-    if (!otp) return alert("Please enter OTP");
-    if (otp.length !== 6) return alert("OTP must be 6 digits");
-    
-    setLoading(true);
-    try {
-      let response;
-      
-      // Jika user sudah terdaftar dan kita di step OTP (bukan dari password), gunakan login-with-otp
-      if (authMode === 'login' && step === 'otp' && !password) {
-        response = await fetch(`${API_URL}/auth/login-with-otp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, code: otp }),
-        });
-      } else {
-        // Untuk registrasi atau verifikasi setelah password
-        response = await fetch(`${API_URL}/auth/verify-otp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, code: otp }),
-        });
-      }
-
       const data = await response.json();
+
       if (!response.ok) {
-        // Jika login-with-otp gagal karena user tidak ditemukan, otomatis buat akun baru
-        if (authMode === 'login' && data.message?.includes('User not found')) {
-          alert("Email not registered. Creating new account...");
-          setAuthMode('register');
-          // Coba verifikasi OTP untuk registrasi
-          const registerResponse = await fetch(`${API_URL}/auth/verify-otp`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, code: otp }),
-          });
-          
-          const registerData = await registerResponse.json();
-          if (!registerResponse.ok) throw new Error(registerData.message || "Registration failed");
-          
-          if (registerData.access_token) {
-            localStorage.setItem("token", registerData.access_token);
-            alert("Account created successfully! Welcome to Smoethievibes!");
-            router.push(`/Auth/callback?token=${registerData.access_token}`);
-            return;
-          }
-        }
-        throw new Error(data.message || "OTP verification failed");
+        throw new Error(data.message || "Login failed");
       }
 
-      if (data.access_token) {
-        localStorage.setItem("token", data.access_token);
-        
-        // Tampilkan pesan yang sesuai dengan mode
-        if (authMode === 'register') {
-          alert("Registration successful! Welcome to Smoethievibes!");
-        } else {
-          alert("Login successful! Welcome back!");
-        }
-        
-        router.push(`/Auth/callback?token=${data.access_token}`);
-      }
-    } catch (error: unknown) {
-      console.error(error);
-      const message = error instanceof Error ? error.message : String(error);
-      alert(message || "Invalid OTP");
+      // @keamanan Store JWT in localStorage
+      localStorage.setItem("token", data.data.token);
+      localStorage.setItem("user", JSON.stringify(data.data.user));
+
+      setSuccess("Login successful! Redirecting...");
+      setTimeout(() => router.push("/"), 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResendOtp = async () => {
-    if (otpTimer > 0) return; // Jangan kirim ulang jika timer masih berjalan
-    
+  // @keamanan Handle registration
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!email || !password) {
+      setError("Email and password are required");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError("Invalid email format");
+      return;
+    }
+
+    const validation = validatePassword(password);
+    if (!validation.valid) {
+      setError(validation.message || "Password validation failed");
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/auth/send-otp`, {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          email: sanitizeInput(email.toLowerCase()),
+          password: sanitizeInput(password),
+        }),
       });
 
-      if (!response.ok) throw new Error('Failed to resend OTP');
-      
-      alert("OTP has been resent to your email!");
-      
-      // Mulai timer 30 detik untuk resend berikutnya
-      setOtpTimer(30);
-      const timer = setInterval(() => {
-        setOtpTimer((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      
-    } catch (error) {
-      console.error(error);
-      alert("Failed to resend OTP. Please try again.");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Registration failed");
+      }
+
+      // @keamanan Store JWT in localStorage
+      localStorage.setItem("token", data.data.token);
+      localStorage.setItem("user", JSON.stringify(data.data.user));
+
+      setSuccess("Registration successful! Redirecting...");
+      setTimeout(() => router.push("/Profile"), 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !loading) {
-      if (step === 'email') handleEmailSubmit();
-      else if (step === 'password') handlePasswordSubmit();
-      else if (step === 'otp') handleOtpSubmit();
-    }
+  // @ui Handle Google OAuth sign-in
+  const handleGoogleSignIn = () => {
+    window.location.href = `${API_URL}/auth/google`;
   };
 
+  const handleSubmit = authMode === "login" ? handleLogin : handleRegister;
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-200 via-green-100 to-white px-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#FFF9F3] via-[#FFE8D6] to-[#FFD7B5] flex items-center justify-center p-4">
+      {/* @ui Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
+        <div className="absolute top-40 right-10 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
+        <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-orange-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000" />
+      </div>
+
       <motion.div
-        initial={{ opacity: 0, y: 18 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="
-          w-full max-w-md
-          bg-white/70 backdrop-blur-2xl
-          shadow-[0_30px_60px_rgba(0,0,0,0.08)]
-          rounded-[2rem]
-          border border-black/10
-          overflow-hidden p-8
-        "
+        transition={{ duration: 0.6 }}
+        className="relative z-10 w-full max-w-md"
       >
-        <h2 className="text-3xl font-semibold text-neutral-900 mb-2 text-center">
-          {step === 'otp' ? 'Enter OTP' : (step === 'email' ? 'Welcome' : (authMode === 'login' ? 'Welcome Back' : 'Create Account'))}
-        </h2>
-        <p className="text-center text-neutral-600 mb-8">
-          {step === 'otp' ? `We sent a code to ${email}` : (step === 'email' ? 'Enter your email to continue' : (authMode === 'login' ? 'Enter your password' : 'Set a password'))}
-        </p>
+        {/* @ui Card container */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 bg-clip-text text-transparent mb-2">
+              SmoethieVibe
+            </h1>
+            <p className="text-gray-600 text-sm">
+              {authMode === "login"
+                ? "Welcome back! Sign in to continue"
+                : "Create your SmoethieVibe account"}
+            </p>
+          </div>
 
-        <div className="flex flex-col gap-4">
-          {step === 'email' && (
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyPress={handleKeyPress}
-              disabled={loading}
-              className="p-3 rounded-xl border border-black/20 focus:ring-2 focus:ring-green-500 outline-none"
-              autoFocus
-            />
+          {/* Error message */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"
+            >
+              {error}
+            </motion.div>
           )}
 
-          {step === 'password' && (
-            <>
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyPress={handleKeyPress}
-                disabled={loading}
-                className="p-3 rounded-xl border border-black/20 focus:ring-2 focus:ring-green-500 outline-none"
-                autoFocus
-              />
-              {authMode === 'register' && (
+          {/* Success message */}
+          {success && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm"
+            >
+              {success}
+            </motion.div>
+          )}
+
+          {/* Auth form - unified email/password */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email field */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
                 <input
-                  type="password"
-                  placeholder="Confirm Password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
                   disabled={loading}
-                  className="p-3 rounded-xl border border-black/20 focus:ring-2 focus:ring-green-500 outline-none"
                 />
-              )}
-              {authMode === 'login' && (
-                <button
-                  onClick={() => setStep('otp')}
-                  className="text-sm text-green-600 hover:text-green-700 text-left"
-                >
-                  Login with OTP instead
-                </button>
-              )}
-            </>
-          )}
-
-          {step === 'otp' && (
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="000000"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                onKeyPress={handleKeyPress}
-                disabled={loading}
-                className="w-full p-3 rounded-xl border border-black/20 focus:ring-2 focus:ring-green-500 outline-none text-center text-2xl tracking-widest"
-                maxLength={6}
-                autoFocus
-              />
-              <div className="text-center space-y-2">
-                <button
-                  onClick={handleResendOtp}
-                  disabled={loading || otpTimer > 0}
-                  className="text-sm text-green-600 hover:text-green-700 disabled:text-gray-400 disabled:cursor-not-allowed"
-                >
-                  {otpTimer > 0 ? `Resend OTP in ${otpTimer}s` : "Didn't receive OTP? Resend"}
-                </button>
-                <button
-                  onClick={() => setStep('email')}
-                  className="block w-full text-sm text-gray-500 hover:text-black"
-                >
-                  Use different email
-                </button>
               </div>
             </div>
-          )}
 
-          <button
-            onClick={() => {
-              if (step === 'email') handleEmailSubmit();
-              else if (step === 'password') handlePasswordSubmit();
-              else if (step === 'otp') handleOtpSubmit();
-            }}
-            disabled={loading}
-            className="mt-3 py-3 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 transition disabled:opacity-50 flex items-center justify-center"
-          >
-            {loading ? "Processing..." : "Continue"}
-          </button>
+            {/* Password field */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+              {authMode === "register" && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Min 8 chars, uppercase, lowercase, number, special char
+                </p>
+              )}
+            </div>
 
-          {step === 'password' && (
-            <button onClick={() => setStep('email')} className="text-sm text-gray-500 hover:text-black">
-              Back to Email
-            </button>
-          )}
-
-          {step === 'email' && (
-            <button
-              onClick={() => (window.location.href = `${API_URL}/auth/google`)}
-              className="flex items-center justify-center gap-2 py-3 rounded-xl border border-gray-300 hover:bg-gray-50 transition mt-2"
+            {/* Submit button */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold py-3 rounded-lg hover:shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+              {loading ? (
+                <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+              ) : authMode === "login" ? (
+                <>
+                  <LogIn className="h-5 w-5" /> Sign In
+                </>
+              ) : (
+                <>
+                  <UserPlus className="h-5 w-5" /> Sign Up
+                </>
+              )}
+            </motion.button>
+          </form>
+
+          {/* Google OAuth */}
+          <div className="mt-6">
+            <div className="relative mb-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white/80 text-gray-500">Or continue with</span>
+              </div>
+            </div>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="button"
+              onClick={handleGoogleSignIn}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24">
+                <path
+                  fill="currentColor"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  fill="currentColor"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="currentColor"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                />
+                <path
+                  fill="currentColor"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                />
               </svg>
-              <span className="text-gray-700 font-medium">Sign in with Google</span>
+              Google
+            </motion.button>
+          </div>
+
+          {/* Toggle auth mode */}
+          <div className="mt-6 text-center text-sm">
+            <span className="text-gray-600">
+              {authMode === "login"
+                ? "Don't have an account? "
+                : "Already have an account? "}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode(authMode === "login" ? "register" : "login");
+                setError("");
+                setSuccess("");
+              }}
+              className="font-bold text-orange-500 hover:text-orange-600 transition"
+            >
+              {authMode === "login" ? "Sign Up" : "Sign In"}
             </button>
-          )}
+          </div>
         </div>
       </motion.div>
     </div>
