@@ -8,13 +8,13 @@ import Image from "next/image";
 const cafePhotos = [
   { 
     title: "Zona Santai", 
-    img: "/Landing/kasir1.jpg", 
+    img: "/Landing/mejablkg.jpg", 
     alt: "Foto meja dan kursi kayu di sudut kafe yang nyaman.",
     tag: "Interior"
   },
   { 
     title: "Sudut Penuh Cahaya", 
-    img: "/Landing/kasir1.jpg", 
+    img: "/Landing/depan1.jpg", 
     alt: "Area bar smoothie dengan cahaya alami yang masuk.",
     tag: "Bar"
   },
@@ -34,7 +34,7 @@ const cafePhotos = [
   },
   { 
     title: "Teras Kafe", 
-    img: "/Landing/kasir1.jpg", 
+    img: "/Landing/teras1.jpg", 
     alt: "Area teras luar ruangan dengan tanaman hijau.",
     tag: "Outdoor"
   },
