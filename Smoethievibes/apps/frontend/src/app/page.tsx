@@ -12,7 +12,7 @@ export default function Home() {
       {/* @ui HERO SECTION: background image + text overlay */}
       <section className="relative w-full h-[680px]">
         <Image
-          src={"https://res.cloudinary.com/dogx3ps3r/image/upload/v1765320849/IMG_20251115_090049_dkhyle.jpg"}
+          src={"/Landing/kasir1.png"}
           alt="UMKM Kudus"
           fill
           priority
@@ -25,7 +25,7 @@ export default function Home() {
             className="text-center font-extrabold text-4xl md:text-6xl leading-snug drop-shadow-lg"
             delay={0.2}
           >
-            Jelajahi Aneka Hidangan di <br /> SmoethieVibe.
+            Jelajahi Aneka Hidangan di <br />Chilla by SmoethieVibe.
           </AnimatedHeading>
 
           <AnimatedParagraph 

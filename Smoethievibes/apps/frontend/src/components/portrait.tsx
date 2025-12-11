@@ -15,7 +15,7 @@ const cafePhotos = [
   },
   { 
     title: "Sudut Penuh Cahaya", 
-    img: "/Landing/kasir1.jpg", 
+    img: "/Landing/kasir2.jpg", 
     alt: "Area bar smoothie dengan cahaya alami yang masuk.",
     tag: "Bar"
   },
@@ -35,7 +35,7 @@ const cafePhotos = [
   },
   { 
     title: "Teras Kafe", 
-    img: "/Landing/kasir1.jpg", 
+    img: "/Landing/depan.jpg", 
     alt: "Area teras luar ruangan dengan tanaman hijau.",
     tag: "Outdoor"
   },
