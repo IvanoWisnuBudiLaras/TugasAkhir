@@ -5,47 +5,140 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Menu, LogOut, ChevronDown, X } from "lucide-react";
 import { CartIcon } from "./CartIcon";
-import { useQuery } from "@apollo/client";
-import { GET_CATEGORIES} from "../lib/graphql/queries";
-import { useAuth } from "@/lib/context";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-// ----------- NAV YANG SUDAH DIPERBAIKI TOTAL -----------
 // Type untuk kategori
 interface Category {
   id: string;
   name: string;
 }
 
-export default function Nav() {
-  const { user, isAuthenticated, logout } = useAuth();
+type UserProfile = {
+    id: string;
+    email: string;
+    name?: string | null;
+    avatar?: string | null;
+    phone?: string | null;
+    address?: string | null;
+    role?: string;
+};
 
+export default function Nav() {
   // UI State
   const [hydrated, setHydrated] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // Auth State
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Categories State (REST API)
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
 
   // Hindari fetch sebelum hydration
   useEffect(() => {
     setHydrated(true);
   }, []);
 
-  // ----------- QUERY: CATEGORIES -----------
-  const {
-    loading: categoriesLoading,
-    data: categoriesData,
-    error: categoriesError,
-    refetch: refetchCategories,
-  } = useQuery(GET_CATEGORIES, {
-    ssr: false,
-    skip: !hydrated, // jangan fetch sebelum client siap
-    fetchPolicy: "cache-first",
-    errorPolicy: "all",
-  });
+  // Fetch categories using REST API
+  useEffect(() => {
+    if (!hydrated) return;
+    
+    const fetchCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const response = await fetch(`${API_URL}/categories`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch categories');
+        }
+        
+        const data = await response.json();
+        setCategories(data);
+        setCategoriesError(null);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setCategoriesError('Gagal memuat kategori');
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
 
-  // Handle logout
-  const handleLogout = () => {
-    logout();
+    fetchCategories();
+  }, [hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch user profile
+  useEffect(() => {
+    if (!hydrated) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch(`${API_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        if (!res.ok) throw new Error('Failed to fetch profile');
+        
+        const profile: UserProfile = await res.json();
+        setIsLoggedIn(true);
+        setIsAdmin(profile.role === 'ADMIN');
+      } catch {
+        localStorage.removeItem('token');
+        setIsLoggedIn(false);
+        setIsAdmin(false);
+      }
+    };
+
+    fetchProfile();
+  }, [hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleLogout = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      await fetch(`${API_URL}/auth/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      localStorage.removeItem('token');
+      setIsLoggedIn(false);
+      setIsAdmin(false);
+      window.location.href = '/';
+    }
+  };
+
+  const refetchCategories = () => {
+    // Trigger refetch by fetching again
+    setCategoriesLoading(true);
+    setCategoriesError(null);
+    
+    fetch(`${API_URL}/categories`)
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to fetch categories');
+        return response.json();
+      })
+      .then(data => {
+        setCategories(data);
+        setCategoriesError(null);
+      })
+      .catch(error => {
+        console.error('Error refetching categories:', error);
+        setCategoriesError('Gagal memuat kategori');
+      })
+      .finally(() => {
+        setCategoriesLoading(false);
+      });
   };
 
   if (!hydrated) {
@@ -69,7 +162,7 @@ export default function Nav() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3">
             <Image src="/logo2.png" width={38} height={38} alt="Logo" />
-            <span className="text-xl font-bold text-green-600">SmoethieVibe</span>
+            <span className="text-xl font-bold text-green-600">Chilla By SmoethieVibe</span>
           </Link>
 
           {/* MENU */}
@@ -105,7 +198,7 @@ export default function Nav() {
                     </div>
                   )}
 
-                  {categoriesData?.categories?.map((cat: Category) => {
+                  {categories.map((cat: Category) => {
                     const slug = cat.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
                     return (
                       <Link
@@ -124,15 +217,15 @@ export default function Nav() {
             <li><Link href="/Tentang" className="hover:text-green-600 transition-colors duration-200">Tentang</Link></li>
             <li><Link href="/Contact" className="hover:text-green-600 transition-colors duration-200">Contact</Link></li>
 
-            {isAuthenticated && <li><Link href="/Profile" className="hover:text-green-600 transition-colors duration-200">Profile</Link></li>}
-            {user?.role === 'ADMIN' && <li><Link href="/admin" className="hover:text-green-600 transition-colors duration-200">Admin Dashboard</Link></li>}
+            {isLoggedIn && <li><Link href="/Profile" className="hover:text-green-600 transition-colors duration-200">Profile</Link></li>}
+            {isAdmin && <li><Link href="/admin" className="hover:text-green-600 transition-colors duration-200">Admin Dashboard</Link></li>}
           </ul>
 
           {/* CTA */}
           <div className="flex items-center gap-4">
             <CartIcon />
 
-            {isAuthenticated ? (
+            {isLoggedIn ? (
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-all duration-200 transform hover:scale-105"
@@ -142,7 +235,7 @@ export default function Nav() {
               </button>
             ) : (
               <Link
-                href="/Auth/simple-page"
+                href="/Auth"
                 className="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-all duration-200 transform hover:scale-105"
               >
                 Login
@@ -159,7 +252,7 @@ export default function Nav() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             <Image src="/logo2.png" width={30} height={30} alt="Logo" />
-            <span className="text-lg font-bold text-green-600">SmoethieVibe</span>
+            <span className="text-lg font-bold text-green-600">Chilla By SmoethieVibe</span>
           </Link>
 
           {/* Hamburger */}
@@ -201,7 +294,7 @@ export default function Nav() {
                       </div>
                     )}
 
-                    {categoriesData?.categories?.map((cat: Category) => {
+                    {categories.map((cat: Category) => {
                       const slug = cat.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
                       return (
                         <Link
@@ -221,10 +314,11 @@ export default function Nav() {
               <li><Link href="/Tentang" onClick={() => setIsMobileMenuOpen(false)}>Tentang</Link></li>
               <li><Link href="/Contact" onClick={() => setIsMobileMenuOpen(false)}>Contact</Link></li>
 
-              {isAuthenticated && <li><Link href="/Profile" onClick={() => setIsMobileMenuOpen(false)}>Profile</Link></li>              {user?.role === 'ADMIN' && <li><Link href="/admin" onClick={() => setIsMobileMenuOpen(false)}>Admin Dashboard</Link></li>}
+              {isLoggedIn && <li><Link href="/Profile" onClick={() => setIsMobileMenuOpen(false)}>Profile</Link></li>}
+              {isAdmin && <li><Link href="/admin" onClick={() => setIsMobileMenuOpen(false)}>Admin Dashboard</Link></li>}
 
               <li className="pt-2 border-t border-gray-200">
-                {isAuthenticated ? (
+                {isLoggedIn ? (
                   <button
                     onClick={() => {
                       handleLogout();
@@ -237,7 +331,7 @@ export default function Nav() {
                   </button>
                 ) : (
                   <Link
-                    href="/Auth/simple-page"
+                    href="/Auth"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="block px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600 text-center"
                   >
@@ -251,7 +345,7 @@ export default function Nav() {
       </header>
 
       {/* Spacer */}
-      <div className="h-[55px]" />
+      <div className="w-full h-[55px]" />
     </>
   );
 }

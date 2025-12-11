@@ -1,11 +1,43 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/context/AuthContext";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export default function SettingsPage() {
+  const router = useRouter();
+  const { isAuthenticated, user, authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push("/Auth");
+      return;
+    }
+
+    if (!authLoading && user?.role !== "ADMIN") {
+      router.push("/unauthorized");
+      return;
+    }
+  }, [isAuthenticated, user, authLoading, router]);
+
+  if (authLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || user?.role !== "ADMIN") {
+    return null; // Redirect sudah diproses di useEffect
+  }
   return (
     <div className="space-y-6">
 

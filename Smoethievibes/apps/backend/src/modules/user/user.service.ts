@@ -30,16 +30,45 @@ export class UserService {
   }
 
   async findAll() {
-    const cacheKey = this.getCacheKey('all');
-    const cached = await this.redisClient.get(cacheKey);
-    
-    if (cached) {
-      return JSON.parse(cached);
-    }
+    try {
+      const cacheKey = this.getCacheKey('all');
+      
+      // Try to get from cache first
+      try {
+        const cached = await this.redisClient.get(cacheKey);
+        if (cached) {
+          return JSON.parse(cached);
+        }
+      } catch (redisError) {
+        console.warn('Redis cache get failed, falling back to database:', redisError);
+        // Continue to database if Redis fails
+      }
 
-    const users = await this.prisma.user.findMany();
-    await this.redisClient.setex(cacheKey, this.CACHE_TTL, JSON.stringify(users));
-    return users;
+      const users = await this.prisma.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      });
+
+      // Try to cache the result, but don't fail if Redis is down
+      try {
+        await this.redisClient.setex(cacheKey, this.CACHE_TTL, JSON.stringify(users));
+      } catch (redisCacheError) {
+        console.warn('Redis cache set failed:', redisCacheError);
+        // Continue without caching
+      }
+
+      return users;
+    } catch (dbError) {
+      console.error('Database error in findAll:', dbError);
+      throw new Error('Failed to fetch users from database');
+    }
   }
 
   async findOne(id: string, useCache: boolean = true) {

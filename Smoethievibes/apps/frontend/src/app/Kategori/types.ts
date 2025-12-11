@@ -7,6 +7,10 @@ export interface Category {
   description?: string;
   image?: string;
   productCount?: number;
+  isActive?: boolean;
+  sortOrder?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface Product {

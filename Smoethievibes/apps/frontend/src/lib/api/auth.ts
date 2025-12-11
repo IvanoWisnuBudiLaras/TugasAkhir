@@ -57,7 +57,11 @@ export const authAPI = {
     });
 
     if (!response.ok) {
-      throw new Error("Not authenticated");
+      // Jika status 401, itu berarti user belum login, jangan throw error
+      if (response.status === 401) {
+        return { data: null };
+      }
+      throw new Error("Authentication check failed");
     }
 
     return response.json();

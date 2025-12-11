@@ -179,7 +179,8 @@ export class ProductService {
     }
 
     try {
-      const products = await this.prisma.product.findMany({
+      // Coba cari berdasarkan ID dulu (untuk backward compatibility)
+      let products = await this.prisma.product.findMany({
         where: { 
           categoryId
         },
@@ -196,6 +197,40 @@ export class ProductService {
           { name: 'asc' }
         ]
       });
+
+      // Jika tidak ada hasil, coba cari berdasarkan nama kategori (case-insensitive)
+      if (products.length === 0) {
+        // Cari kategori yang namanya cocok (case-insensitive)
+        const category = await this.prisma.category.findFirst({
+          where: {
+            name: {
+              equals: categoryId,
+              mode: 'insensitive'
+            }
+          }
+        });
+
+        if (category) {
+          // Jika kategori ditemukan, ambil produk dengan categoryId yang sesuai
+          products = await this.prisma.product.findMany({
+            where: { 
+              categoryId: category.id
+            },
+            include: {
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                  description: true
+                }
+              },
+            },
+            orderBy: [
+              { name: 'asc' }
+            ]
+          });
+        }
+      }
 
       // Try to cache the result, but don't fail if Redis is down
       try {

@@ -1,9 +1,9 @@
 // app/Kategori/page.tsx
 // URL: /Kategori
 
-import CategoryList from './CategoryList';
+import ProductList from './ProductList';
 
-// Halaman ini menampilkan daftar semua kategori
+// Halaman ini menampilkan semua menu/produk
 export default function CategoryRootPage() {
-  return <CategoryList />;
+  return <ProductList />;
 }

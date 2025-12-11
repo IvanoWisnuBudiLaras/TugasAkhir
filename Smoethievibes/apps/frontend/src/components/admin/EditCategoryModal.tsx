@@ -50,7 +50,8 @@ export default function EditCategoryModal({
       }
 
       try {
-        const response = await fetch(`/api/categories/${category.id}`, {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const response = await fetch(`${API_URL}/categories/${category.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -63,13 +64,13 @@ export default function EditCategoryModal({
         });
 
       if (response.ok) {
-        alert("Category updated successfully!");
+        alert("Kategori berhasil diperbarui!");
         onCategoryUpdated();
         onClose();
         setName("");
         setDescription("");
       } else {
-        let errorMessage = "Failed to update category";
+        let errorMessage = "Gagal memperbarui kategori";
         try {
           const errorData = await response.json();
           // Handle new error format from backend
@@ -86,7 +87,7 @@ export default function EditCategoryModal({
       }
     } catch (error) {
       console.error("Error updating category:", error);
-      setError("Network error. Please try again.");
+      setError("Terjadi kesalahan jaringan. Silakan coba lagi.");
     } finally {
       setLoading(false);
     }
@@ -98,7 +99,7 @@ export default function EditCategoryModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Edit Category</h3>
+          <h3 className="text-lg font-semibold">Ubah Kategori</h3>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
@@ -110,7 +111,7 @@ export default function EditCategoryModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Category Name *
+              Nama Kategori *
             </label>
             <input
               type="text"
@@ -125,13 +126,13 @@ export default function EditCategoryModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
+              Deskripsi
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="Enter category description (optional)"
+              placeholder="Masukkan deskripsi kategori (opsional)"
               rows={3}
               disabled={loading}
             />
@@ -150,14 +151,14 @@ export default function EditCategoryModal({
               className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
               disabled={loading}
             >
-              Cancel
+              Batal
             </button>
             <button
               type="submit"
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
               disabled={loading || !name.trim()}
             >
-              {loading ? "Updating..." : "Update Category"}
+              {loading ? "Memperbarui..." : "Perbarui Kategori"}
             </button>
           </div>
         </form>

@@ -3,66 +3,74 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@apollo/client';
-import { GET_CATEGORIES } from '@/lib/graphql/queries';
 import { Category } from './types';
-// Query configurations removed - using default cache-first policy
 
-interface GraphQLCategory {
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+interface APICategory {
   id: string;
   name: string;
   description?: string | null;
-  image?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  productCount?: number;
+  image?: string;
 }
 
 export default function CategoryList() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Gunakan GraphQL untuk fetch kategori dengan cache-first policy
-  const { data, loading: graphqlLoading, error: graphqlError } = useQuery(GET_CATEGORIES, {
-    // Default cache-first policy for static data like categories
-    errorPolicy: 'all',
-    notifyOnNetworkStatusChange: true,
-  });
-
-  // Set loading state berdasarkan GraphQL loading
+  // Fetch categories using REST API
   useEffect(() => {
-    setLoading(graphqlLoading);
-  }, [graphqlLoading]);
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${API_URL}/categories`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data: APICategory[] = await response.json();
+        
+        // Transform API data ke format Category
+        const transformedCategories: Category[] = data.map((cat) => ({
+          id: cat.id,
+          name: cat.name,
+          slug: cat.name.toLowerCase().replace(/\s+/g, '-'), // Generate slug dari name
+          description: cat.description || '',
+          productCount: cat.productCount || 0,
+          createdAt: cat.createdAt ? new Date(cat.createdAt) : new Date(),
+          updatedAt: cat.updatedAt ? new Date(cat.updatedAt) : new Date(),
+          isActive: true, // Default true
+          sortOrder: 0, // Default 0
+          image: cat.image || '',
+        }));
+        
+        setCategories(transformedCategories);
+        setError(null);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setError('Gagal memuat kategori');
+        
+        // Fallback jika API error
+        const fallbackCategories: Category[] = [
+          { id: '1', name: 'Smoothie Bowl', slug: 'smoothie-bowl', description: 'Healthy smoothie bowls', productCount: 12 },
+          { id: '2', name: 'Fresh Juice', slug: 'fresh-juice', description: 'Fresh fruit juices', productCount: 8 },
+          { id: '3', name: 'Healthy Snacks', slug: 'healthy-snacks', description: 'Nutritious snacks', productCount: 15 },
+          { id: '4', name: 'Main Course', slug: 'main-course', description: 'Healthy main courses', productCount: 10 },
+          { id: '5', name: 'Dessert', slug: 'dessert', description: 'Healthy desserts', productCount: 6 },
+        ];
+        setCategories(fallbackCategories);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  useEffect(() => {
-    if (data?.categories) {
-      // Transform GraphQL data ke format Category
-      const transformedCategories: Category[] = data.categories.map((cat: GraphQLCategory) => ({
-        id: cat.id,
-        name: cat.name,
-        slug: cat.name.toLowerCase().replace(/\s+/g, '-'), // Generate slug dari name
-        description: cat.description || '',
-        productCount: 0, // Default 0 karena GraphQL tidak ada field ini
-        createdAt: cat.createdAt ? new Date(cat.createdAt) : new Date(),
-        updatedAt: cat.updatedAt ? new Date(cat.updatedAt) : new Date(),
-        isActive: true, // Default true
-        sortOrder: 0, // Default 0
-      }));
-      setCategories(transformedCategories);
-      setLoading(false);
-    } else if (graphqlError) {
-      console.error('GraphQL error:', graphqlError);
-      // Fallback jika GraphQL error
-      const fallbackCategories: Category[] = [
-        { id: '1', name: 'Smoothie Bowl', slug: 'smoothie-bowl', description: 'Healthy smoothie bowls', productCount: 12 },
-        { id: '2', name: 'Fresh Juice', slug: 'fresh-juice', description: 'Fresh fruit juices', productCount: 8 },
-        { id: '3', name: 'Healthy Snacks', slug: 'healthy-snacks', description: 'Nutritious snacks', productCount: 15 },
-        { id: '4', name: 'Main Course', slug: 'main-course', description: 'Healthy main courses', productCount: 10 },
-        { id: '5', name: 'Dessert', slug: 'dessert', description: 'Healthy desserts', productCount: 6 },
-      ];
-      setCategories(fallbackCategories);
-      setLoading(false);
-    }
-  }, [data, graphqlError]);
+    fetchCategories();
+  }, []);
 
   if (loading) {
     return (
@@ -84,6 +92,26 @@ export default function CategoryList() {
     );
   }
 
+  if (error && categories.length === 0) {
+    return (
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">Kategori Produk</h1>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-8 text-center mb-6">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+          >
+            Coba Lagi
+          </button>
+        </div>
+        <p className="text-sm text-gray-500 text-center">
+          Menampilkan data kategori sementara karena koneksi database bermasalah.
+        </p>
+      </div>
+    );
+  }
+
   if (categories.length === 0) {
     return (
       <div>
@@ -98,6 +126,23 @@ export default function CategoryList() {
   return (
     <div>
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Kategori Produk</h1>
+      
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="text-red-800">
+              <p className="font-medium">Koneksi Database Bermasalah</p>
+              <p className="text-sm">{error}</p>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
+            >
+              Coba Lagi
+            </button>
+          </div>
+        </div>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {categories.map((category) => (
@@ -127,6 +172,12 @@ export default function CategoryList() {
           </Link>
         ))}
       </div>
+      
+      {error && (
+        <p className="text-sm text-gray-500 text-center mt-6">
+          Menampilkan data kategori sementara karena koneksi database bermasalah.
+        </p>
+      )}
     </div>
   );
 }
