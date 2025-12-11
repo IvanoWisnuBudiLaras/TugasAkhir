@@ -10,21 +10,27 @@ import { ProductModule } from './modules/product/product.module';
 import { OrderModule } from './modules/order/order.module';
 import { ExportModule } from './exports/export.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { AppController } from './app.controller';
-import { EmailModule } from './modules/email/email.module';
 import {
   jwtConfig,
   corsConfig,
   swaggerAppConfig
 } from './config';
 import messagesConfig from './config/messages.config';
-import { validate } from './config/env.validation';
+import { RedisModule } from './common/redis/redis.module';
 
 @Module({
   imports: [
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      autoSchemaFile: true,
+      playground: true,
+      introspection: true,
+      context: ({ req, res }: { req: Request; res: Response }) => ({ req, res }),
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
-      validate,
       load: [
         jwtConfig,
         messagesConfig,
@@ -32,29 +38,15 @@ import { validate } from './config/env.validation';
         swaggerAppConfig
       ],
     }),
-    // @fitur Konfigurasi GraphQL Apollo Server untuk schema generation dan playground
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
-      autoSchemaFile: 'schema.gql',
-      playground: true,
-      introspection: true,
-      context: ({ req, res }: { req: Request; res: Response }) => ({ req, res }),
-    }),
+    RedisModule,
     PrismaModule,
-    // @fitur Autentikasi & otorisasi (JWT + Google OAuth)
     AuthModule,
-    // @fitur Manajemen pengguna & operasi profil
     UserModule,
-    // @fitur Katalog produk & manajemen inventaris
     ProductModule,
-    // @fitur Pemrosesan & pelacakan pesanan
     OrderModule,
-    // @fitur Fungsionalitas ekspor data
     ExportModule,
-    // @fitur Dashboard admin & analitik
     DashboardModule,
-    // @fitur Layanan email (OTP, notifikasi)
-    EmailModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [],

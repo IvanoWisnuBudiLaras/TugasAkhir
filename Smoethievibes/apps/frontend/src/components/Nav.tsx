@@ -12,8 +12,19 @@ import {
 } from "lucide-react";
 
 import { CartIcon } from "./CartIcon"; // Asumsi CartIcon sudah diimpor dengan benar
+import { useQuery } from "@apollo/client";
+import { GET_CATEGORIES } from "../lib/graphql/queries";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+// Interface untuk kategori
+interface Category {
+  id: string;
+  name: string;
+  slug?: string;
+  description?: string;
+  image?: string;
+}
 
 type UserProfile = {
     id: string;
@@ -25,13 +36,7 @@ type UserProfile = {
     role?: string;
 };
 
-// Definisikan kategori untuk dropdown
-const categories = [
-    { name: "Semua Menu", href: "/Kategori" },
-    { name: "Makanan", href: "/Kategori/makanan" },
-    { name: "Minuman", href: "/Kategori/minuman" },
-    { name: "Smoothie", href: "/Kategori/smoothie" },
-];
+
 
 
 export default function Nav() {
@@ -41,6 +46,9 @@ export default function Nav() {
     const [loading, setLoading] = useState(true);
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // State untuk menu mobile
+
+    // Ambil data kategori dari GraphQL
+    const { data: categoriesData, loading: categoriesLoading, error: categoriesError } = useQuery(GET_CATEGORIES);
 
     // ... (useEffect dan handleLogout tetap sama)
     useEffect(() => {
@@ -135,14 +143,38 @@ export default function Nav() {
                                     bg-white rounded-lg shadow-xl border border-gray-100
                                     overflow-hidden
                                 ">
-                                    {categories.map((item) => (
+                                    {/* Link Semua Menu */}
+                                    <Link
+                                        href="/Kategori"
+                                        onClick={() => setIsCategoryOpen(false)}
+                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 transition"
+                                    >
+                                        Semua Menu
+                                    </Link>
+                                    
+                                    {/* Loading state */}
+                                    {categoriesLoading && (
+                                        <div className="block px-4 py-2 text-sm text-gray-500">
+                                            Loading...
+                                        </div>
+                                    )}
+                                    
+                                    {/* Error state */}
+                                    {categoriesError && (
+                                        <div className="block px-4 py-2 text-sm text-red-500">
+                                            Error loading categories
+                                        </div>
+                                    )}
+                                    
+                                    {/* Kategori dari backend */}
+                                    {categoriesData?.categories?.map((category: Category) => (
                                         <Link
-                                            key={item.name}
-                                            href={item.href}
+                                            key={category.id}
+                                            href={`/Kategori/${category.slug || category.name.toLowerCase()}`}
                                             onClick={() => setIsCategoryOpen(false)}
                                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 transition"
                                         >
-                                            {item.name}
+                                            {category.name}
                                         </Link>
                                     ))}
                                 </div>
@@ -153,7 +185,7 @@ export default function Nav() {
                         <li className="hover:text-green-600 transition"><Link href="/Tentang">Tentang</Link></li>
                         <li className="hover:text-green-600 transition"><Link href="/Contact">Contact</Link></li>
                         {isLoggedIn && <li className="hover:text-green-600 transition"><Link href="/Profile">Profile</Link></li>}
-                        {isAdmin && <li className="hover:text-green-600 transition"><Link href="/admin/dashboard">Admin Dashboard</Link></li>}
+                        {isAdmin && <li className="hover:text-green-600 transition"><Link href="/admin">Admin Dashboard</Link></li>}
                     </ul>
 
                     {/* CTA Buttons (Sign In or Logout) */}
@@ -222,9 +254,30 @@ export default function Nav() {
                     
                     {/* Menu Kategori di Mobile (Tidak perlu Dropdown penuh) */}
                     <li className="font-bold text-lg text-green-600 pt-2">Kategori</li>
-                    {categories.map((item) => (
-                         <li key={item.name} onClick={closeMobileMenu} className="pl-4 text-gray-600 hover:text-green-600 transition border-b border-gray-100 pb-3">
-                             <Link href={item.href}>{item.name}</Link>
+                    
+                    {/* Link Semua Menu */}
+                    <li onClick={closeMobileMenu} className="pl-4 text-gray-600 hover:text-green-600 transition border-b border-gray-100 pb-3">
+                        <Link href="/Kategori">Semua Menu</Link>
+                    </li>
+                    
+                    {/* Loading state untuk kategori */}
+                    {categoriesLoading && (
+                        <li className="pl-4 text-gray-500 text-sm border-b border-gray-100 pb-3">
+                            Loading...
+                        </li>
+                    )}
+                    
+                    {/* Error state untuk kategori */}
+                    {categoriesError && (
+                        <li className="pl-4 text-red-500 text-sm border-b border-gray-100 pb-3">
+                            Error loading categories
+                        </li>
+                    )}
+                    
+                    {/* Kategori dari backend */}
+                    {categoriesData?.categories?.map((category: Category) => (
+                         <li key={category.id} onClick={closeMobileMenu} className="pl-4 text-gray-600 hover:text-green-600 transition border-b border-gray-100 pb-3">
+                             <Link href={`/Kategori/${category.slug || category.name.toLowerCase()}`}>{category.name}</Link>
                          </li>
                     ))}
 

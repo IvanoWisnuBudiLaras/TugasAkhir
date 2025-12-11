@@ -1,16 +1,22 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class UserController {
   constructor(private readonly userService: UserService) { }
 
   @Get()
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   async findAll() {
     return this.userService.findAll();
   }
+
+
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
