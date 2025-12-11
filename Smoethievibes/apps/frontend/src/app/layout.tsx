@@ -1,10 +1,11 @@
-﻿
+﻿﻿
 import "@/styles/globals.css";
 // @fitur ApolloProvider dan client dipindahkan ke Providers client component
 import Providers from '@/components/Providers';
 
 // @seo Metadata untuk SEO dan social sharing
 export const metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
   title: {
     default: 'SmoethieVibe - Fresh Smoothies & Healthy Food',
     template: '%s | SmoethieVibe',
@@ -33,11 +34,12 @@ export const metadata = {
     description: 'Fresh smoothies and healthy menu from SmoethieVibe. Visit us in Kudus!',
     images: ['/Landing/kasir1.jpg'],
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 // @komponen Root layout: server component menyediakan metadata dan static content

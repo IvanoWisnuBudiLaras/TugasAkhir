@@ -14,7 +14,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
-    @Inject('EMAIL_SERVICE') private emailService: any,
+    @Inject('EMAIL_SERVICE') private emailService: EmailService,
   ) { }
 
   // Validate email/password credentials
@@ -79,14 +79,14 @@ export class AuthService {
     }
 
     // Hapus OTP lama untuk email ini
-    await (this.prisma as any).oTP.deleteMany({
+    await this.prisma.otp.deleteMany({
       where: { email }
     });
 
     const code = crypto.randomInt(100000, 999999).toString();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-    await (this.prisma as any).oTP.create({
+    await this.prisma.otp.create({
       data: {
         email,
         code,
@@ -187,7 +187,7 @@ export class AuthService {
     }
 
     // Verify OTP
-    const otpRow = await (this.prisma as any).oTP.findFirst({ 
+    const otpRow = await this.prisma.otp.findFirst({ 
       where: { 
         email, 
         code 
@@ -204,7 +204,7 @@ export class AuthService {
     }
 
     // Consume OTP
-    await (this.prisma as any).oTP.deleteMany({ where: { email, code } });
+    await this.prisma.otp.deleteMany({ where: { email, code } });
 
     // Update last login
     await this.prisma.user.update({ 
@@ -237,7 +237,7 @@ export class AuthService {
     }
 
     // Check OTP table first
-    const otpRow = await (this.prisma as any).oTP.findFirst({ 
+    const otpRow = await this.prisma.otp.findFirst({ 
       where: { 
         email, 
         code 
@@ -246,35 +246,7 @@ export class AuthService {
     });
     
     if (!otpRow) {
-      // Fallback to legacy user fields
-      const userFallback = await this.prisma.user.findUnique({ where: { email } });
-      if (!userFallback) throw new BadRequestException('User not found');
-      if (!userFallback.otpCode || !userFallback.otpExpiresAt) throw new BadRequestException('No OTP found. Please login again.');
-      if (userFallback.otpCode !== code) throw new BadRequestException('Invalid OTP');
-      if (new Date() > userFallback.otpExpiresAt) throw new BadRequestException('OTP expired');
-      
-      // Aktifkan user dan bersihkan OTP
-      await this.prisma.user.update({ 
-        where: { id: userFallback.id }, 
-        data: { 
-          otpCode: null, 
-          otpExpiresAt: null, 
-          isActive: true,
-          lastLogin: new Date()
-        } 
-      });
-      
-      const payload = { 
-        sub: userFallback.id, 
-        email: userFallback.email, 
-        roles: userFallback.role || [], 
-        iss: this.configService.get('auth.token.issuer') || 'smoethievibes', 
-        aud: this.configService.get('auth.token.audience') || 'smoethievibes-users' 
-      };
-      
-      const accessToken = this.jwtService.sign(payload);
-      const { password, ...result } = userFallback;
-      return { access_token: accessToken, user: result };
+      throw new BadRequestException('Invalid OTP');
     }
 
     if (new Date() > otpRow.expiresAt) {
@@ -282,7 +254,7 @@ export class AuthService {
     }
 
     // Consume OTP(s)
-    await (this.prisma as any).oTP.deleteMany({ where: { email, code } });
+    await this.prisma.otp.deleteMany({ where: { email, code } });
 
     // Find user and mark active
     const user = await this.prisma.user.findUnique({ where: { email } });
@@ -293,8 +265,6 @@ export class AuthService {
       where: { id: user.id }, 
       data: { 
         isActive: true, 
-        otpCode: null, 
-        otpExpiresAt: null,
         lastLogin: new Date()
       } 
     });
@@ -398,11 +368,12 @@ export class AuthService {
       const otp = crypto.randomInt(100000, 999999).toString();
       const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-      await this.prisma.user.update({
-        where: { id: user.id },
+      await this.prisma.otp.create({
         data: {
-          otpCode: otp,
-          otpExpiresAt: otpExpiresAt,
+          email: user.email,
+          code: otp,
+          action: 'REGISTER',
+          expiresAt: otpExpiresAt,
         },
       });
 
