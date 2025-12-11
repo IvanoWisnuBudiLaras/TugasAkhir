@@ -64,7 +64,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         });
     };
 
-    // Fungsi-fungsi lain (updateQuantity, removeItem) dapat disalin dari Cart/page.tsx
+    // Fungsi untuk update quantity
     const updateQuantity = (id: number, delta: number) => {
         setItems(prevItems => 
             prevItems.map(item => {

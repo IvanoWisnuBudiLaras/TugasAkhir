@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
+import { AnimatedHeading, AnimatedParagraph } from "@/components/animations";
 
 // @komponen Auth page - unified email/password form
 // @keamanan Input sanitization and password validation built-in
@@ -22,6 +23,10 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  // @keamanan OTP verification states
+  const [showOtpVerification, setShowOtpVerification] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpEmail, setOtpEmail] = useState("");
 
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
@@ -90,18 +95,65 @@ export default function AuthPage() {
 
       const data = await response.json();
 
+      // If server responded with error but indicates OTP is required,
+      // show OTP verification flow instead of throwing immediately.
       if (!response.ok) {
-        throw new Error(data.message || "Login failed");
+        const msg = data?.message;
+        const requiresOtp = !!(
+          data?.requiresOtp ||
+          (msg && typeof msg === 'object' && msg?.requiresOtp) ||
+          (data?.data && data.data?.requiresOtp)
+        );
+        const messageText = typeof msg === 'string' ? msg : msg?.message || data?.message || 'Login failed';
+        if (requiresOtp) {
+          setOtpEmail(email);
+          setShowOtpVerification(true);
+          setSuccess(messageText || 'OTP telah dikirim ke email Anda. Silakan verifikasi.');
+          setError("");
+          return;
+        }
+        throw new Error(messageText || "Login failed");
+      }
+
+      // Check success payload for wrapped or unwrapped token
+      const token = data?.data?.access_token || data?.data?.token || data?.access_token || data?.token || (data?.data && data.data.token);
+      const user = data?.data?.user || data?.user || (data?.data && data.data.user);
+
+      if (!token) {
+        throw new Error('Login response did not include a token');
       }
 
       // @keamanan Store JWT in localStorage
-      localStorage.setItem("token", data.data.token);
-      localStorage.setItem("user", JSON.stringify(data.data.user));
+      localStorage.setItem("token", token);
+      if (user) localStorage.setItem("user", JSON.stringify(user));
 
       setSuccess("Login successful! Redirecting...");
       setTimeout(() => router.push("/"), 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Resend OTP handler
+  const resendOtp = async () => {
+    if (!otpEmail) {
+      setError('No email to resend OTP to');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/auth/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: otpEmail, action: authMode === 'register' ? 'REGISTER' : 'LOGIN' }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body?.message || 'Failed to resend OTP');
+      setSuccess('Kode OTP telah dikirim ulang');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to resend OTP');
     } finally {
       setLoading(false);
     }
@@ -146,12 +198,12 @@ export default function AuthPage() {
         throw new Error(data.message || "Registration failed");
       }
 
-      // @keamanan Store JWT in localStorage
-      localStorage.setItem("token", data.data.token);
-      localStorage.setItem("user", JSON.stringify(data.data.user));
-
-      setSuccess("Registration successful! Redirecting...");
-      setTimeout(() => router.push("/Profile"), 1500);
+      // Save email untuk OTP verification
+      setOtpEmail(email);
+      setSuccess("Pendaftaran berhasil! Silakan verifikasi email Anda.");
+      // Show OTP form instead of direct redirect
+      setShowOtpVerification(true);
+      setError("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -165,6 +217,58 @@ export default function AuthPage() {
   };
 
   const handleSubmit = authMode === "login" ? handleLogin : handleRegister;
+
+  // @keamanan Handle OTP verification
+  const handleOtpVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!otpCode || otpCode.length !== 6) {
+      setError("OTP must be 6 digits");
+      return;
+    }
+
+    if (!otpEmail) {
+      setError("Email not found. Please try again.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/auth/login-with-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: otpEmail,
+          code: otpCode,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "OTP verification failed");
+      }
+
+      // @keamanan Store JWT in localStorage
+      localStorage.setItem("token", data.data.access_token || data.access_token);
+      localStorage.setItem("user", JSON.stringify(data.data.user || data.user));
+
+      setSuccess("Email verified! Redirecting...");
+      setShowOtpVerification(false);
+      // Reset form
+      setEmail("");
+      setPassword("");
+      setOtpCode("");
+      setOtpEmail("");
+      setTimeout(() => router.push("/Auth/callback"), 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "OTP verification failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#FFF9F3] via-[#FFE8D6] to-[#FFD7B5] flex items-center justify-center p-4">
@@ -185,14 +289,21 @@ export default function AuthPage() {
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 bg-clip-text text-transparent mb-2">
+            <AnimatedHeading 
+              level={1}
+              className="text-4xl font-extrabold bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 bg-clip-text text-transparent mb-2"
+              delay={0.2}
+            >
               SmoethieVibe
-            </h1>
-            <p className="text-gray-600 text-sm">
+            </AnimatedHeading>
+            <AnimatedParagraph 
+              className="text-gray-600 text-sm"
+              delay={0.4}
+            >
               {authMode === "login"
                 ? "Welcome back! Sign in to continue"
                 : "Create your SmoethieVibe account"}
-            </p>
+            </AnimatedParagraph>
           </div>
 
           {/* Error message */}
@@ -218,6 +329,7 @@ export default function AuthPage() {
           )}
 
           {/* Auth form - unified email/password */}
+          {!showOtpVerification ? (
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email field */}
             <div>
@@ -292,6 +404,64 @@ export default function AuthPage() {
               )}
             </motion.button>
           </form>
+          ) : (
+          // @keamanan OTP verification form
+          <form onSubmit={handleOtpVerification} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Verification Code
+              </label>
+              <p className="text-sm text-gray-600 mb-3">
+                Kami telah mengirim kode 6 digit ke {otpEmail}
+              </p>
+              <input
+                type="text"
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+                maxLength={6}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition text-center text-2xl tracking-widest font-mono"
+                disabled={loading}
+              />
+            </div>
+
+            {/* Submit button */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold py-3 rounded-lg hover:shadow-lg transition disabled:opacity-50"
+            >
+              {loading ? "Verifying..." : "Verify Email"}
+            </motion.button>
+
+            {/* Resend code button */}
+            <button
+              type="button"
+              onClick={resendOtp}
+              disabled={loading}
+              className="w-full text-sm text-orange-600 py-2 hover:text-orange-700 transition"
+            >
+              Resend code
+            </button>
+
+            {/* Back button */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowOtpVerification(false);
+                setOtpCode("");
+                setOtpEmail("");
+                setError("");
+                setSuccess("");
+              }}
+              className="w-full text-gray-600 py-2 hover:text-gray-800 text-sm"
+            >
+              ← Back to Login
+            </button>
+          </form>
+          )}
 
           {/* Google OAuth */}
           <div className="mt-6">

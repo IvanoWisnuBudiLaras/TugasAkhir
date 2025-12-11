@@ -1,12 +1,31 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   constructor() {
-    // Pass the database URL at runtime so Prisma v7+ doesn't require `url` in schema.
-    // Keep `as any` to avoid strict typing before regenerating the client.
-    super({ datasources: { db: { url: process.env.DATABASE_URL } } } as any);
+    // Konfigurasi connection pool optimal untuk 1000+ pengguna
+    const connectionString = process.env.DATABASE_URL!;
+    const pool = new Pool({
+      connectionString,
+      max: 20, // Maksimal 20 koneksi untuk PostgreSQL
+      idleTimeoutMillis: 10000, // Idle timeout 10 detik
+      connectionTimeoutMillis: 30000, // Connection timeout 30 detik
+    });
+
+    const adapter = new PrismaPg(pool);
+
+    super({
+      // Performance optimizations
+      log: process.env.NODE_ENV === 'development' 
+        ? ['query', 'error', 'warn'] 
+        : ['error'],
+      errorFormat: process.env.NODE_ENV === 'development' ? 'pretty' : 'minimal',
+      // Connection pool configuration untuk Prisma v7
+      adapter,
+    });
   }
 
   async onModuleInit() {

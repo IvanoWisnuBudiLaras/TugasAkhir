@@ -2,18 +2,52 @@ import { Injectable, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OrderSubscriptionService } from './order-subscription.service';
+import Redis from 'ioredis';
 
 @Injectable()
 export class OrderService {
+  private readonly CACHE_TTL = 300; // 5 menit
+
   constructor(
     private prisma: PrismaService,
     private subscriptionService: OrderSubscriptionService,
     @Inject(ConfigService)
     private configService: ConfigService,
+    @Inject('REDIS_CLIENT')
+    private redisClient: Redis,
   ) {}
 
+  private getCacheKey(prefix: string, id?: string): string {
+    return id ? `order:${prefix}:${id}` : `order:${prefix}`;
+  }
+
+  private async invalidateOrderCache(orderId?: string) {
+    const keys = orderId 
+      ? [`order:all`, `order:single:${orderId}`, `order:user:*`]
+      : [`order:all`, `order:user:*`];
+    
+    for (const key of keys) {
+      if (key.includes('*')) {
+        const pattern = key;
+        const matchingKeys = await this.redisClient.keys(pattern);
+        if (matchingKeys.length > 0) {
+          await this.redisClient.del(...matchingKeys);
+        }
+      } else {
+        await this.redisClient.del(key);
+      }
+    }
+  }
+
   async findAll() {
-    return this.prisma.order.findMany({
+    const cacheKey = this.getCacheKey('all');
+    const cached = await this.redisClient.get(cacheKey);
+    
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
+    const orders = await this.prisma.order.findMany({
       include: {
         user: true,
         orderItems: {
@@ -23,10 +57,20 @@ export class OrderService {
         },
       },
     });
+
+    await this.redisClient.setex(cacheKey, this.CACHE_TTL, JSON.stringify(orders));
+    return orders;
   }
 
   async findOne(id: string) {
-    return this.prisma.order.findUnique({
+    const cacheKey = this.getCacheKey('single', id);
+    const cached = await this.redisClient.get(cacheKey);
+    
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
+    const order = await this.prisma.order.findUnique({
       where: { id },
       include: {
         user: true,
@@ -37,6 +81,12 @@ export class OrderService {
         },
       },
     });
+
+    if (order) {
+      await this.redisClient.setex(cacheKey, this.CACHE_TTL, JSON.stringify(order));
+    }
+    
+    return order;
   }
 
   async create(orderData: any) {
@@ -89,6 +139,9 @@ export class OrderService {
       },
     });
 
+    // Invalidate cache
+    await this.invalidateOrderCache();
+
     // Publish order created event
     await this.subscriptionService.publishOrderCreated(order);
 
@@ -106,7 +159,7 @@ export class OrderService {
       }
     }
 
-    return this.prisma.order.update({
+    const updatedOrder = await this.prisma.order.update({
       where: { id },
       data: orderData,
       include: {
@@ -118,16 +171,33 @@ export class OrderService {
         },
       },
     });
+
+    // Invalidate cache
+    await this.invalidateOrderCache(id);
+
+    return updatedOrder;
   }
 
   async remove(id: string) {
-    return this.prisma.order.delete({
+    const result = await this.prisma.order.delete({
       where: { id },
     });
+
+    // Invalidate cache
+    await this.invalidateOrderCache(id);
+
+    return result;
   }
 
   async findByUser(userId: string) {
-    return this.prisma.order.findMany({
+    const cacheKey = this.getCacheKey(`user:${userId}`);
+    const cached = await this.redisClient.get(cacheKey);
+    
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
+    const orders = await this.prisma.order.findMany({
       where: { userId },
       include: {
         orderItems: {
@@ -137,6 +207,9 @@ export class OrderService {
         },
       },
     });
+
+    await this.redisClient.setex(cacheKey, this.CACHE_TTL, JSON.stringify(orders));
+    return orders;
   }
 
   async addOrUpdateOrderItem(orderId: string, productId: string, quantity: number) {

@@ -39,11 +39,21 @@ export default function OrdersPage() {
         if (response.ok) {
           const data = await response.json();
           setOrders(data);
+        } else if (response.status === 403) {
+          console.error("Access denied: Insufficient permissions to view orders");
+          // Redirect to unauthorized page or show error message
+          router.push("/unauthorized");
+        } else if (response.status === 401) {
+          console.error("Authentication required: Token may be expired");
+          localStorage.removeItem("token");
+          router.push("/Auth");
         } else {
-          console.error("Failed to fetch orders");
+          console.error(`Failed to fetch orders: HTTP ${response.status} - ${response.statusText}`);
+          const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+          console.error('Error details:', errorData);
         }
       } catch (error) {
-        console.error("Error fetching orders:", error);
+        console.error("Network error fetching orders:", error);
       } finally {
         setLoading(false);
       }
