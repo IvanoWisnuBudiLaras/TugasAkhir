@@ -20,7 +20,7 @@ const cafePhotos = [
   },
   { 
     title: "Meja Komunal", 
-    img: "/Landing/kasir1.jpg", 
+    img: "/Landing/mejablkg1.jpg", 
     // FIX: Menambahkan properti 'alt' yang hilang
     alt: "Meja panjang komunal untuk bekerja atau berkumpul.", 
     tag: "Co-Working"
@@ -134,7 +134,7 @@ export function CafePortrait() {
                   alt={item.alt || item.title} 
                   fill
                   sizes="(max-width: 768px) 50vw, 25vw"
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="object-cover brightness-100 transition-transform duration-500 group-hover:scale-105"
                 />
               </div>
 

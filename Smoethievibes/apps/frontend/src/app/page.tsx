@@ -12,7 +12,7 @@ export default function Home() {
       <section className="relative w-full h-[680px]">
         <Image
           src="/Landing/kasir1.jpg"
-          alt="UMKM Kudus"
+          alt="SmoethieVibe"
           fill
           priority
           className="object-cover brightness-50"
