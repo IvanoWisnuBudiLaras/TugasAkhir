@@ -1,6 +1,6 @@
 import { Field, InputType, registerEnumType} from '@nestjs/graphql';
 import { IsEmail, IsNotEmpty, IsPhoneNumber, IsString, IsOptional } from 'class-validator';
-import { UserRole } from '@prisma/client';
+import { UserRole } from '../../../common/enums';
 
 registerEnumType(UserRole, {
   name: 'UserRole',

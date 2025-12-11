@@ -77,7 +77,7 @@ export class ExportService {
     });
 
     // Add data
-    users.forEach(user => {
+    users.forEach((user: any) => {
       worksheet.addRow({
         id: user.id,
         name: user.name,
@@ -128,7 +128,7 @@ export class ExportService {
       orderBy: { createdAt: 'desc' }
     });
 
-    products.forEach(product => {
+    products.forEach((product: any) => {
       worksheet.addRow({
         id: product.id,
         name: product.name,
@@ -187,7 +187,7 @@ export class ExportService {
       orderBy: { createdAt: 'desc' }
     });
 
-    orders.forEach(order => {
+    orders.forEach((order: any) => {
       worksheet.addRow({
         id: order.id,
         userName: order.user.name,

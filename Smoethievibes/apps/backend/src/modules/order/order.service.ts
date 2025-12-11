@@ -194,7 +194,7 @@ export class OrderService {
       where: { orderId },
     });
 
-    const total = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const total = orderItems.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
 
     // Update total order
     return this.prisma.order.update({

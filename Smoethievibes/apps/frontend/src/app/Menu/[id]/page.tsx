@@ -28,19 +28,25 @@ export default function DetailPage({ params }: { params: { id: string } }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+  const [productId, setProductId] = useState<string | null>(null);
 
   useEffect(() => {
-    const id = params.id;
+    setProductId(params.id);
+  }, [params.id]);
+
+  useEffect(() => {
+    if (!productId) return;
+
     const fetchProduct = async () => {
       try {
-        const res = await fetch(`${API_URL}/products/${id}`);
+        const res = await fetch(`${API_URL}/products/${productId}`);
         if (!res.ok) throw new Error('Product not found');
         const data = await res.json();
         // normalize shape if needed
         setProduct({ id: data.id, title: data.name || data.title, price: data.price || data.price_number || 0, image: data.image || data.imageUrl || '/Menu/placeholder.png', description: data.description });
       } catch (err) {
         console.warn('Failed to fetch product from API, using fallback', err);
-        const found = fallbackProducts.find(p => p.id === Number(params.id));
+        const found = fallbackProducts.find(p => p.id === Number(productId));
         setProduct(found || null);
       } finally {
         setLoading(false);
@@ -48,7 +54,7 @@ export default function DetailPage({ params }: { params: { id: string } }) {
     };
 
     fetchProduct();
-  }, [params.id]);
+  }, [productId]);
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;
   if (!product) return <div className="p-10 text-center text-red-500">Produk tidak ditemukan!</div>;

@@ -1,6 +1,6 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
 import { IsString, IsNumber, IsOptional, IsEnum } from 'class-validator';
-import { OrderType, OrderStatus } from '@prisma/client';
+import { OrderType, OrderStatus } from '../../../common/enums';
 
 @InputType()
 export class UpdateOrderInput {
