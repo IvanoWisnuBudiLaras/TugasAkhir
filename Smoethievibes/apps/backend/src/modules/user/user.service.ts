@@ -42,20 +42,23 @@ export class UserService {
     return users;
   }
 
-  async findOne(id: string) {
-    const cacheKey = this.getCacheKey('single', id);
-    const cached = await this.redisClient.get(cacheKey);
-    
-    if (cached) {
-      return JSON.parse(cached);
+  async findOne(id: string, useCache: boolean = true) {
+    // Skip cache if useCache is false
+    if (useCache) {
+      const cacheKey = this.getCacheKey('single', id);
+      const cached = await this.redisClient.get(cacheKey);
+      
+      if (cached) {
+        return JSON.parse(cached);
+      }
     }
 
     const user = await this.prisma.user.findUnique({
       where: { id },
     });
 
-    if (user) {
-      await this.redisClient.setex(cacheKey, this.CACHE_TTL, JSON.stringify(user));
+    if (user && useCache) {
+      await this.redisClient.setex(this.getCacheKey('single', id), this.CACHE_TTL, JSON.stringify(user));
     }
     
     return user;

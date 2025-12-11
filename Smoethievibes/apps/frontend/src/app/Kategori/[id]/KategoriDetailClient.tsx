@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { GET_ALL_PRODUCTS, GET_PRODUCTS_BY_CATEGORY_SLUG } from '@/lib/graphql/queries';
 import client from '@/lib/apollo-client';
+// Query configurations removed - using default cache-first policy
 import ProductCard from '../ProductCard';
 import { getImageUrl as getProductImageUrl } from '../utils';
 
@@ -118,7 +119,8 @@ export default function KategoriDetailClient({ categoryId }: KategoriDetailClien
           try {
             const result = await client.query({
               query: GET_ALL_PRODUCTS,
-              variables: { skip: 0, take: 100 }
+              variables: { skip: 0, take: 100 },
+              // Use cache-first for product listings (default policy)
             });
             data = result.data.products.map((apiProduct: ApiProduct): ProductCardProduct => ({
               ...apiProduct,
@@ -140,7 +142,8 @@ export default function KategoriDetailClient({ categoryId }: KategoriDetailClien
           try {
             const result = await client.query({
               query: GET_PRODUCTS_BY_CATEGORY_SLUG,
-              variables: { categorySlug: categoryId }
+              variables: { categorySlug: categoryId },
+              // Use cache-first for product listings (default policy)
             });
             data = result.data.productsByCategorySlug.map((apiProduct: ApiProduct): ProductCardProduct => ({
               ...apiProduct,

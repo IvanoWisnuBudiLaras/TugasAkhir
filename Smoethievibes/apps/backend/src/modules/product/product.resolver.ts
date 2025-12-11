@@ -1,7 +1,6 @@
 import { Resolver, Query, Mutation, Args, ID } from "@nestjs/graphql";
 import { ProductService } from "./product.service";
 import { Product } from "./product.model";
-import { Category } from "./category.model";
 import { CreateProductInput } from "./dto/create-product.input";
 import { UpdateProductInput } from "./dto/update-product.input";
 
@@ -47,13 +46,5 @@ export class ProductResolver {
     return this.productService.findByCategorySlug(categorySlug);
   }
 
-  @Query(() => [Category], { name: "categories" })
-  async findAllCategories() {
-    return this.productService.findAllCategories();
-  }
 
-  @Query(() => Category, { name: "category" })
-  async findOneCategory(@Args("id", { type: () => ID }) id: string) {
-    return this.productService.findOneCategory(id);
-  }
 }

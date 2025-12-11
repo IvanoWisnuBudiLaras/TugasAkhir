@@ -6,6 +6,9 @@ import { Clock, Mail, MapPin, Phone } from "lucide-react";
 import { AnimatedHeading, AnimatedParagraph, ScrollText } from "@/components/animations";
 
 export default function ContactPage() {
+  
+
+
   // Lokasi Peta yang Diberikan Pengguna
   const mapIframe = (
     <iframe 
@@ -129,6 +132,8 @@ export default function ContactPage() {
             
           </div>
         </ScrollText>
+        
+
         
       </div>
     </div>

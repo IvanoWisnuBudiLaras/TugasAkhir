@@ -16,8 +16,6 @@ export default function AddCategoryModal({ isOpen, onClose, onCategoryAdded }: A
   });
   const [loading, setLoading] = useState(false);
 
-  const API_URL = "http://localhost:3001";
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -32,7 +30,7 @@ export default function AddCategoryModal({ isOpen, onClose, onCategoryAdded }: A
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${API_URL}/products/categories`, {
+      const response = await fetch("/api/categories", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

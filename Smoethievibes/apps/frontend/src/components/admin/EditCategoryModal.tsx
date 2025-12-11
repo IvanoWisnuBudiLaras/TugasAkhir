@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 
-const API_URL = "http://localhost:3001";
-
 interface Category {
   id: string;
   name: string;
@@ -45,24 +43,24 @@ export default function EditCategoryModal({
     setError("");
 
     const token = localStorage.getItem("token");
-    if (!token) {
-      setError("Authentication required");
-      setLoading(false);
-      return;
-    }
+      if (!token) {
+        setError("Authentication required");
+        setLoading(false);
+        return;
+      }
 
-    try {
-      const response = await fetch(`${API_URL}/products/categories/${category.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: name.trim(),
-          description: description.trim() || undefined,
-        }),
-      });
+      try {
+        const response = await fetch(`/api/categories/${category.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: name.trim(),
+            description: description.trim() || undefined,
+          }),
+        });
 
       if (response.ok) {
         alert("Category updated successfully!");

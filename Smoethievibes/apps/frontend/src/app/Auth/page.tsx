@@ -1,19 +1,27 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
 import { AnimatedHeading, AnimatedParagraph } from "@/components/animations";
+import dynamic from "next/dynamic";
+import { useAuth } from "@/lib/context/AuthContext";
+import { authAPI } from "@/lib/api";
+import { signIn } from "next-auth/react";
 
 // @komponen Auth page - unified email/password form
 // @keamanan Input sanitization and password validation built-in
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
-export default function AuthPage() {
+function AuthPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { login, register, verifyOtp } = useAuth();
   const [mounted, setMounted] = useState(false);
+  
+  // Ambil parameter redirect dari URL
+  const redirectTo = searchParams.get("redirect");
+  // const intent = searchParams.get("intent"); // Reserved for future use
 
   // Form states
   const [email, setEmail] = useState("");
@@ -84,53 +92,28 @@ export default function AuthPage() {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: sanitizeInput(email.toLowerCase()),
-          password: sanitizeInput(password),
-        }),
-      });
-
-      const data = await response.json();
-
-      // If server responded with error but indicates OTP is required,
-      // show OTP verification flow instead of throwing immediately.
-      if (!response.ok) {
-        const msg = data?.message;
-        const requiresOtp = !!(
-          data?.requiresOtp ||
-          (msg && typeof msg === 'object' && msg?.requiresOtp) ||
-          (data?.data && data.data?.requiresOtp)
-        );
-        const messageText = typeof msg === 'string' ? msg : msg?.message || data?.message || 'Login failed';
-        if (requiresOtp) {
-          setOtpEmail(email);
-          setShowOtpVerification(true);
-          setSuccess(messageText || 'OTP telah dikirim ke email Anda. Silakan verifikasi.');
-          setError("");
-          return;
-        }
-        throw new Error(messageText || "Login failed");
-      }
-
-      // Check success payload for wrapped or unwrapped token
-      const token = data?.data?.access_token || data?.data?.token || data?.access_token || data?.token || (data?.data && data.data.token);
-      const user = data?.data?.user || data?.user || (data?.data && data.data.user);
-
-      if (!token) {
-        throw new Error('Login response did not include a token');
-      }
-
-      // @keamanan Store JWT in localStorage
-      localStorage.setItem("token", token);
-      if (user) localStorage.setItem("user", JSON.stringify(user));
-
+      await login(sanitizeInput(email.toLowerCase()), sanitizeInput(password));
+      
       setSuccess("Login successful! Redirecting...");
-      setTimeout(() => router.push("/"), 1500);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      setTimeout(() => {
+        if (redirectTo) {
+          router.push(redirectTo);
+        } else {
+          router.push("/");
+        }
+      }, 1500);
+    } catch (err: unknown) {
+      // Check if error indicates OTP is required
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      const requiresOtp = errorMessage.includes('OTP') || errorMessage.includes('verification') || errorMessage.includes('verify');
+      if (requiresOtp) {
+        setOtpEmail(email);
+        setShowOtpVerification(true);
+        setSuccess('OTP telah dikirim ke email Anda. Silakan verifikasi.');
+        setError("");
+      } else {
+        setError(err instanceof Error ? err.message : "Login failed");
+      }
     } finally {
       setLoading(false);
     }
@@ -144,16 +127,24 @@ export default function AuthPage() {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/auth/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: otpEmail, action: authMode === 'register' ? 'REGISTER' : 'LOGIN' }),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body?.message || 'Failed to resend OTP');
+      await authAPI.resendOtp(otpEmail, authMode === 'register' ? 'REGISTER' : 'LOGIN');
       setSuccess('Kode OTP telah dikirim ulang');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to resend OTP');
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      setError(errorMessage || 'Failed to resend OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle Google Sign In
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      await signIn("google", { callbackUrl: redirectTo || "/" });
+    } catch (err) {
+      setError("Failed to sign in with Google");
     } finally {
       setLoading(false);
     }
@@ -183,20 +174,11 @@ export default function AuthPage() {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: sanitizeInput(email.toLowerCase()),
-          password: sanitizeInput(password),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Registration failed");
-      }
+      await register(
+        sanitizeInput(email.toLowerCase()),
+        sanitizeInput(password),
+        email.split("@")[0]
+      );
 
       // Save email untuk OTP verification
       setOtpEmail(email);
@@ -204,17 +186,24 @@ export default function AuthPage() {
       // Show OTP form instead of direct redirect
       setShowOtpVerification(true);
       setError("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
+    } catch (err: unknown) {
+      // Check if error indicates OTP is required
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      const requiresOtp = errorMessage.includes('OTP') || errorMessage.includes('verification') || errorMessage.includes('verify');
+      if (requiresOtp) {
+        setOtpEmail(email);
+        setShowOtpVerification(true);
+        setSuccess('OTP telah dikirim ke email Anda. Silakan verifikasi.');
+        setError("");
+      } else {
+        setError(err instanceof Error ? err.message : "Registration failed");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // @ui Handle Google OAuth sign-in
-  const handleGoogleSignIn = () => {
-    window.location.href = `${API_URL}/auth/google`;
-  };
+
 
   const handleSubmit = authMode === "login" ? handleLogin : handleRegister;
 
@@ -236,24 +225,7 @@ export default function AuthPage() {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/auth/login-with-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: otpEmail,
-          code: otpCode,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "OTP verification failed");
-      }
-
-      // @keamanan Store JWT in localStorage
-      localStorage.setItem("token", data.data.access_token || data.access_token);
-      localStorage.setItem("user", JSON.stringify(data.data.user || data.user));
+      await verifyOtp(otpEmail, otpCode);
 
       setSuccess("Email verified! Redirecting...");
       setShowOtpVerification(false);
@@ -262,9 +234,16 @@ export default function AuthPage() {
       setPassword("");
       setOtpCode("");
       setOtpEmail("");
-      setTimeout(() => router.push("/Auth/callback"), 1500);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "OTP verification failed");
+      setTimeout(() => {
+        if (redirectTo) {
+          router.push(redirectTo);
+        } else {
+          router.push("/");
+        }
+      }, 1500);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(errorMessage || "OTP verification failed");
     } finally {
       setLoading(false);
     }
@@ -463,49 +442,11 @@ export default function AuthPage() {
           </form>
           )}
 
-          {/* Google OAuth */}
-          <div className="mt-6">
-            <div className="relative mb-4">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white/80 text-gray-500">Or continue with</span>
-              </div>
-            </div>
 
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="button"
-              onClick={handleGoogleSignIn}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
-            >
-              <svg className="h-5 w-5" viewBox="0 0 24 24">
-                <path
-                  fill="currentColor"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                />
-              </svg>
-              Google
-            </motion.button>
-          </div>
 
           {/* Toggle auth mode */}
           <div className="mt-6 text-center text-sm">
-            <span className="text-gray-600">
+             <span className="text-gray-600">
               {authMode === "login"
                 ? "Don't have an account? "
                 : "Already have an account? "}
@@ -518,7 +459,7 @@ export default function AuthPage() {
                 setSuccess("");
               }}
               className="font-bold text-orange-500 hover:text-orange-600 transition"
-            >
+          
               {authMode === "login" ? "Sign Up" : "Sign In"}
             </button>
           </div>
@@ -527,3 +468,8 @@ export default function AuthPage() {
     </div>
   );
 }
+
+// Export dengan dynamic loading untuk mencegah SSR issues
+export default dynamic(() => Promise.resolve(AuthPage), { 
+  ssr: false 
+});

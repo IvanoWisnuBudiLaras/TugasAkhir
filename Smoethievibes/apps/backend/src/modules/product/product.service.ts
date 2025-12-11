@@ -1,6 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import Redis from 'ioredis';
+import { CategoryService } from '../category/category.service';
 
 @Injectable()
 export class ProductService {
@@ -8,7 +9,8 @@ export class ProductService {
   
   constructor(
     private prisma: PrismaService,
-    @Inject('REDIS_CLIENT') private readonly redis: Redis
+    @Inject('REDIS_CLIENT') private readonly redis: Redis,
+    private readonly categoryService: CategoryService,
   ) {}
 
   private getCacheKey(type: string, id?: string): string {
@@ -225,10 +227,19 @@ export class ProductService {
     }
 
     try {
+      // Transform slug ke format nama kategori (misal: "healthy-food" -> "Healthy Food")
+      const formattedCategoryName = categorySlug
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+
       const products = await this.prisma.product.findMany({
         where: { 
           category: {
-            name: categorySlug
+            name: {
+              equals: formattedCategoryName,
+              mode: 'insensitive' // pencarian tidak case-sensitive
+            }
           }
         },
         include: {
@@ -260,175 +271,7 @@ export class ProductService {
     }
   }
 
-  async findAllCategories() {
-    const cacheKey = this.getCacheKey('categories');
-    
-    // Try to get from cache first
-    try {
-      const cached = await this.redis.get(cacheKey);
-      if (cached) {
-        return JSON.parse(cached);
-      }
-    } catch (redisError) {
-      console.warn('Redis cache get failed, falling back to database:', redisError);
-      // Continue to database if Redis fails
-    }
 
-    try {
-      const categories = await this.prisma.category.findMany({
-        orderBy: { name: 'asc' },
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          createdAt: true
-        }
-      });
-
-      // Try to cache the result, but don't fail if Redis is down
-      try {
-        await this.redis.setex(cacheKey, this.CACHE_TTL, JSON.stringify(categories));
-      } catch (redisCacheError) {
-        console.warn('Redis cache set failed:', redisCacheError);
-        // Continue without caching
-      }
-
-      return categories;
-    } catch (dbError) {
-      console.error('Database error in findAllCategories:', dbError);
-      throw new Error('Failed to fetch categories from database');
-    }
-  }
-
-  async findOneCategory(id: string) {
-    const cacheKey = this.getCacheKey('category-id', id);
-    
-    // Try to get from cache first
-    try {
-      const cached = await this.redis.get(cacheKey);
-      if (cached) {
-        return JSON.parse(cached);
-      }
-    } catch (redisError) {
-      console.warn('Redis cache get failed, falling back to database:', redisError);
-      // Continue to database if Redis fails
-    }
-
-    try {
-      const category = await this.prisma.category.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          createdAt: true
-        }
-      });
-
-      if (category) {
-        // Try to cache the result, but don't fail if Redis is down
-        try {
-          await this.redis.setex(cacheKey, this.CACHE_TTL, JSON.stringify(category));
-        } catch (redisCacheError) {
-          console.warn('Redis cache set failed:', redisCacheError);
-          // Continue without caching
-        }
-      }
-      
-      return category;
-    } catch (dbError) {
-      console.error('Database error in findOneCategory:', dbError);
-      throw new Error('Failed to fetch category from database');
-    }
-  }
-
-  async createCategory(categoryData: { name: string; description?: string }) {
-    try {
-      const category = await this.prisma.category.create({
-        data: categoryData,
-      });
-      
-      // Invalidate categories cache
-      try {
-        await this.redis.del(this.getCacheKey('categories'));
-      } catch (redisError) {
-        console.warn('Redis cache invalidation failed:', redisError);
-        // Continue without cache invalidation
-      }
-      
-      return category;
-    } catch (error: any) {
-      if (error.code === 'P2002') {
-        // Prisma unique constraint violation
-        throw new Error(`Category with name "${categoryData.name}" already exists`);
-      }
-      throw error;
-    }
-  }
-
-  async updateCategory(id: string, categoryData: { name?: string; description?: string }) {
-    try {
-      const category = await this.prisma.category.update({
-        where: { id },
-        data: categoryData,
-      });
-      
-      // Invalidate cache
-      try {
-        await this.redis.del(this.getCacheKey('categories'));
-        await this.redis.del(this.getCacheKey('category-id', id));
-      } catch (redisError) {
-        console.warn('Redis cache invalidation failed:', redisError);
-        // Continue without cache invalidation
-      }
-      
-      return category;
-    } catch (error: any) {
-      if (error.code === 'P2002') {
-        // Prisma unique constraint violation
-        throw new Error(`Category with name "${categoryData.name}" already exists`);
-      }
-      if (error.code === 'P2025') {
-        // Prisma record not found
-        throw new Error(`Category with id "${id}" not found`);
-      }
-      throw error;
-    }
-  }
-
-  async deleteCategory(id: string) {
-    try {
-      // Check if category is being used by products
-      const productsCount = await this.prisma.product.count({
-        where: { categoryId: id }
-      });
-
-      if (productsCount > 0) {
-        throw new Error('Cannot delete category that has products associated with it');
-      }
-
-      const category = await this.prisma.category.delete({
-        where: { id },
-      });
-      
-      // Invalidate cache
-      try {
-        await this.redis.del(this.getCacheKey('categories'));
-        await this.redis.del(this.getCacheKey('category-id', id));
-      } catch (redisError) {
-        console.warn('Redis cache invalidation failed:', redisError);
-        // Continue without cache invalidation
-      }
-      
-      return category;
-    } catch (dbError: any) {
-      console.error('Database error in deleteCategory:', dbError);
-      if (dbError.code === 'P2025') {
-        throw new Error(`Category with id "${id}" not found`);
-      }
-      throw dbError;
-    }
-  }
 
   private async invalidateProductCache(productId?: string) {
     try {

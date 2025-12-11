@@ -1,4 +1,4 @@
-﻿﻿import Image from "next/image";
+﻿﻿﻿﻿import Image from "next/image";
 import {CafePortrait} from "@/components/portrait";
 import {Rekomendasi} from "@/components/rekomendasi";
 import {Testimoni} from "@/components/TestimoniSection";

@@ -1,4 +1,4 @@
-﻿﻿import { Module } from '@nestjs/common';
+﻿﻿﻿﻿﻿﻿import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { ProductModule } from './modules/product/product.module';
+import { CategoryModule } from './modules/category/category.module';
 import { OrderModule } from './modules/order/order.module';
 import { ExportModule } from './exports/export.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
@@ -18,7 +19,7 @@ import {
   swaggerAppConfig
 } from './config';
 import messagesConfig from './config/messages.config';
-import { RedisModule } from './common/redis/redis.module';
+// import { RedisModule } from './common/redis/redis.module';
 
 @Module({
   imports: [
@@ -38,11 +39,12 @@ import { RedisModule } from './common/redis/redis.module';
         swaggerAppConfig
       ],
     }),
-    RedisModule,
+    // RedisModule,
     PrismaModule,
     AuthModule,
     UserModule,
     ProductModule,
+    CategoryModule,
     OrderModule,
     ExportModule,
     DashboardModule,

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useQuery } from '@apollo/client';
 import { GET_CATEGORIES } from '@/lib/graphql/queries';
 import { Category } from './types';
+// Query configurations removed - using default cache-first policy
 
 interface GraphQLCategory {
   id: string;
@@ -20,8 +21,12 @@ export default function CategoryList() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Gunakan GraphQL untuk fetch kategori
-  const { data, loading: graphqlLoading, error: graphqlError } = useQuery(GET_CATEGORIES);
+  // Gunakan GraphQL untuk fetch kategori dengan cache-first policy
+  const { data, loading: graphqlLoading, error: graphqlError } = useQuery(GET_CATEGORIES, {
+    // Default cache-first policy for static data like categories
+    errorPolicy: 'all',
+    notifyOnNetworkStatusChange: true,
+  });
 
   // Set loading state berdasarkan GraphQL loading
   useEffect(() => {

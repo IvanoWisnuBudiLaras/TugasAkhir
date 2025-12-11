@@ -20,6 +20,7 @@ export function withScrollAnimation<P extends object>(
 ) {
   return function AnimatedComponent(props: P & WithScrollAnimationProps) {
     const {
+      children,
       className = "",
       delay = defaultProps?.delay || 0,
       duration = defaultProps?.duration || 0.6,

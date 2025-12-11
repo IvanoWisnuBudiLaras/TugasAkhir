@@ -6,8 +6,6 @@ import { Plus, Edit, Trash2 } from "lucide-react";
 import AddCategoryModal from "@/components/admin/AddCategoryModal";
 import EditCategoryModal from "@/components/admin/EditCategoryModal";
 
-const API_URL = "http://localhost:3001";
-
 interface Category {
   id: string;
   name: string;
@@ -31,8 +29,9 @@ export default function CategoriesPage() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/products/categories`, {
+      const response = await fetch('/api/categories', {
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
@@ -125,7 +124,7 @@ export default function CategoriesPage() {
 
     const token = localStorage.getItem("token");
     try {
-      const response = await fetch(`${API_URL}/products/categories/${categoryId}`, {
+      const response = await fetch(`/api/categories/${categoryId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
