@@ -8,6 +8,7 @@ import {
   Res,
   Patch,
   BadRequestException,
+  UnauthorizedException,
   Query,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -57,7 +58,14 @@ export class AuthController {
         success: true,
         data: result,
       };
-    } catch (error) {
+    } catch (error: any) {
+      // @keamanan Handle user tidak aktif - return requiresOtp flag agar frontend bisa show OTP form
+      if (error instanceof UnauthorizedException && error.message.includes('not activated')) {
+        throw new BadRequestException({
+          message: 'Please verify your email with OTP',
+          requiresOtp: true,
+        });
+      }
       if (error instanceof BadRequestException) {
         throw error;
       }
@@ -158,10 +166,8 @@ export class AuthController {
       console.error('Profile not found for user:', user.sub);
       throw new BadRequestException('Profile not found');
     }
-    return {
-      success: true,
-      data: profile,
-    };
+    const { password, ...result } = profile;
+    return result;
   }
 
   @Patch('complete-profile')
@@ -231,18 +237,54 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async googleCallback(@Req() req: Request, @Res() res: Response) {
     try {
-      const result = await this.authService.validateGoogleUser(req.user);
+      console.log('Google OAuth callback received:', req.user);
+      
+      if (!req.user) {
+        throw new Error('No user data received from Google');
+      }
+      
+      // Cek apakah req.user sudah berupa user yang sudah diproses (memiliki id)
+      // atau masih berupa Google profile mentah
+      const googleProfile = req.user as any;
+      
+      let result;
+      if (googleProfile.access_token && googleProfile.user?.id) {
+        // User sudah diproses oleh Passport strategy, langsung gunakan
+        console.log('User already processed by Passport, using existing data');
+        result = {
+          access_token: googleProfile.access_token,
+          user: googleProfile.user
+        };
+      } else {
+        // Raw Google profile, proses melalui validateGoogleUser
+        console.log('Processing raw Google profile');
+        const googleUserData = {
+          email: googleProfile.email,
+          firstName: googleProfile.firstName || googleProfile.givenName,
+          lastName: googleProfile.lastName || googleProfile.familyName,
+          picture: googleProfile.picture || googleProfile.avatar
+        };
+        
+        result = await this.authService.validateGoogleUser(googleUserData);
+      }
+      
+      if (!result || !result.access_token) {
+        throw new Error('Failed to generate access token');
+      }
       
       // @fitur Redirect ke frontend dengan JWT token (path case-sensitive)
       const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
       const redirectUrl = `${frontendUrl}/Auth/callback?token=${result.access_token}`;
       
+      console.log('Redirecting to:', redirectUrl);
       return res.redirect(redirectUrl);
     } catch (error) {
+      console.error('Google OAuth callback error:', error);
       const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
       const errorMsg = error instanceof Error ? error.message : 'google_auth_failed';
       const redirectUrl = `${frontendUrl}/Auth/callback?error=${encodeURIComponent(errorMsg)}`;
       
+      console.log('Redirecting to error URL:', redirectUrl);
       return res.redirect(redirectUrl);
     }
   }

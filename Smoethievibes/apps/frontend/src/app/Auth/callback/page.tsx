@@ -25,7 +25,7 @@ export default function CallbackPage() {
     };
 
     type ProfileUpdate = {
-        name: string;
+        name?: string;
         phone?: string;
         address?: string;
         avatar?: string;
@@ -40,28 +40,49 @@ export default function CallbackPage() {
     useEffect(() => {
         const init = async () => {
             try {
-                // @keamanan Get token and error from URL search params
+                // @keamanan Get token and error from URL search params or hash
                 const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
                 const urlToken = params.get('token');
+                const urlAccessToken = params.get('access_token');
                 const urlError = params.get('error');
                 const fromRegister = params.get('from') === 'register';
+
+                // Try to parse token from `data` param (some backends return JSON in a param)
+                let dataParamToken: string | null = null;
+                const dataParam = params.get('data');
+                if (dataParam) {
+                    try {
+                        const parsed = JSON.parse(dataParam);
+                        dataParamToken = parsed?.access_token || parsed?.token || null;
+                    } catch {
+                        // ignore parse errors
+                    }
+                }
+
+                // Also check hash fragment (#token=...)
+                let hashToken: string | null = null;
+                if (typeof window !== 'undefined' && window.location.hash) {
+                    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+                    hashToken = hashParams.get('token') || hashParams.get('access_token');
+                }
 
                 // @keamanan Handle Google OAuth errors
                 if (urlError) {
                     showNotification({
                         type: 'error',
-                        title: '❌ Authentication Failed',
+                        title: 'Login Error',
                         message: decodeURIComponent(urlError),
-                        duration: 5000,
+                        duration: 2500,
                     });
                     // Redirect to Auth page after showing error
                     setTimeout(() => router.push('/Auth'), 2000);
                     return;
                 }
 
-                const token = urlToken || localStorage.getItem("token");
+                const token = urlToken || urlAccessToken || dataParamToken || hashToken || localStorage.getItem("token");
                 if (!token) {
-                    router.push("/Auth");
+                    showNotification({ type: 'error', title: 'Auth failed', message: 'No token received from provider', duration: 2500 });
+                    setTimeout(() => router.push('/Auth'), 2000);
                     return;
                 }
 
@@ -105,7 +126,7 @@ export default function CallbackPage() {
                 if (fromRegister) {
                     showNotification({
                         type: 'info',
-                        title: '✨ Complete Your Profile',
+                        title: 'Complete Your Profile',
                         message: 'Welcome! Let\'s make your profile awesome. Fill in your details below 🎯',
                         duration: 6000
                     });
@@ -130,10 +151,10 @@ export default function CallbackPage() {
             .trim();
     };
 
-    // Fungsi untuk validasi nama
+    // Fungsi untuk validasi nama (OPTIONAL - tidak dipaksa)
     const validateName = (name: string): { valid: boolean; message?: string } => {
-        if (!name || name.trim().length === 0) {
-            return { valid: false, message: "Name is required" };
+        if (name.trim().length === 0) {
+            return { valid: true }; // Nama boleh kosong (optional saat callback)
         }
         if (name.length < 2) {
             return { valid: false, message: "Name must be at least 2 characters" };
@@ -188,38 +209,38 @@ export default function CallbackPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        // Validasi input dengan pesan yang lebih menarik
+        // Validasi nama (opsional, tapi kalau diisi harus valid)
         const nameValidation = validateName(name);
         if (!nameValidation.valid) {
             showNotification({
               type: 'error',
-              title: '🚫 Oops! Name Issue',
-              message: nameValidation.message || 'Please check your name and try again ✨',
-              duration: 5000
+              title: 'Invalid Name',
+              message: nameValidation.message || 'Please check your name',
+              duration: 3000
             });
             return;
         }
 
-        // Validasi phone jika diisi dengan pesan yang lebih menarik
+        // Validasi phone jika diisi
         const phoneValidation = validatePhone(phone);
         if (!phoneValidation.valid) {
             showNotification({
               type: 'error',
-              title: '📱 Phone Number Error',
-              message: phoneValidation.message || 'Please check your phone number format 📞',
-              duration: 5000
+              title: 'Invalid Phone',
+              message: phoneValidation.message || 'Please check your phone number',
+              duration: 3000
             });
             return;
         }
 
-        // Validasi avatar jika diisi dengan pesan yang lebih menarik
+        // Validasi avatar jika diisi
         const avatarValidation = validateAvatarUrl(avatar);
         if (!avatarValidation.valid) {
             showNotification({
               type: 'error',
-              title: '🖼️ Avatar URL Error',
-              message: avatarValidation.message || 'Please check your avatar URL format 🎨',
-              duration: 5000
+              title: 'Invalid Avatar URL',
+              message: avatarValidation.message || 'Please check your avatar URL',
+              duration: 3000
             });
             return;
         }
@@ -230,9 +251,9 @@ export default function CallbackPage() {
             const token = localStorage.getItem("token");
             if (!token) throw new Error("No token available");
 
-            const body: ProfileUpdate = { 
-                name: sanitizeInput(name) 
-            } as ProfileUpdate;
+            // Kirim data profile (name boleh null/kosong)
+            const body: ProfileUpdate = {};
+            if (name.trim()) body.name = sanitizeInput(name);
             if (phone) body.phone = sanitizeInput(phone);
             if (address) body.address = sanitizeInput(address);
             if (avatar) body.avatar = sanitizeInput(avatar);
@@ -257,9 +278,9 @@ export default function CallbackPage() {
             console.error(error);
             showNotification({
                 type: 'error',
-                title: '💥 Profile Update Failed',
-                message: 'Oops! Something went wrong. Please check your connection and try again. 🔄',
-                duration: 5000
+                title: 'Update Failed',
+                message: 'Something went wrong. Please try again.',
+                duration: 3000
             });
         } finally {
             setLoading(false);
@@ -314,11 +335,10 @@ export default function CallbackPage() {
                     </div>
                 </div>
 
-                <label className="block mb-2 text-sm font-medium text-gray-700">Name *</label>
+                <label className="block mb-2 text-sm font-medium text-gray-700">Name (optional)</label>
                 <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    required
                     maxLength={50}
                     placeholder="Enter your full name"
                     className="w-full p-3 border rounded mb-4 focus:ring-2 focus:ring-green-500 outline-none"

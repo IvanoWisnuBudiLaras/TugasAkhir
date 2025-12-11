@@ -7,6 +7,9 @@ import { AuthResolver } from './auth.resolver';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { EmailModule } from '../email/email.module';
 
 /**
  * @module ModulAuth
@@ -21,6 +24,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 @Module({
   imports: [
     PrismaModule,
+    EmailModule,
     // @fitur Konfigurasi JWT dengan secret dan expiration yang dynamic
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -40,6 +44,10 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     AuthResolver, 
     // @fitur JWT strategy untuk request authentication
     JwtStrategy,
+    // @fitur JWT auth guard untuk request authentication
+    JwtAuthGuard,
+    // @fitur Roles guard untuk role-based access control
+    RolesGuard,
     // @fitur Google OAuth 2.0 strategy (conditional provider berdasarkan konfigurasi)
     {
       provide: GoogleStrategy,
@@ -62,6 +70,6 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       inject: [ConfigService, AuthService],
     }
   ],
-  exports: [AuthService],
+  exports: [AuthService, JwtAuthGuard, RolesGuard],
 })
 export class AuthModule { }

@@ -7,6 +7,8 @@ import {
   Package,
   ShoppingCart,
   Settings,
+  BarChart3,
+  Tag,
 } from "lucide-react";
 
 export default function AdminLayout({
@@ -46,6 +48,14 @@ export default function AdminLayout({
           </Link>
 
           <Link
+            href="/admin/categories"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-200 transition"
+          >
+            <Tag size={18} />
+            <span>Categories</span>
+          </Link>
+
+          <Link
             href="/admin/products"
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-200 transition"
           >
@@ -59,6 +69,14 @@ export default function AdminLayout({
           >
             <ShoppingCart size={18} />
             <span>Orders</span>
+          </Link>
+
+          <Link
+            href="/admin/analytics"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-200 transition"
+          >
+            <BarChart3 size={18} />
+            <span>Analytics</span>
           </Link>
 
           <Link

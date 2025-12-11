@@ -3,38 +3,39 @@
 
 import React, { useEffect, useRef } from "react";
 import Image from "next/image";
+import { AnimatedHeading, AnimatedParagraph } from "./animations";
 
 // Redesain data: Mengganti menu menjadi foto tempat/vibe kafe
 const cafePhotos = [
   { 
     title: "Zona Santai", 
-    img: "/Landing/mejablkg.jpg", 
+    img: "/Landing/kasir1.jpg", 
     alt: "Foto meja dan kursi kayu di sudut kafe yang nyaman.",
     tag: "Interior"
   },
   { 
     title: "Sudut Penuh Cahaya", 
-    img: "/Landing/depan1.jpg", 
+    img: "/Landing/kasir1.jpg", 
     alt: "Area bar smoothie dengan cahaya alami yang masuk.",
     tag: "Bar"
   },
   { 
     title: "Meja Komunal", 
-    img: "/Landing/kasir1.jpg", 
+    img: "https://res.cloudinary.com/dogx3ps3r/image/upload/v1765320827/IMG_20251115_090216_yrihoi.jpg", 
     // FIX: Menambahkan properti 'alt' yang hilang
     alt: "Meja panjang komunal untuk bekerja atau berkumpul.", 
     tag: "Co-Working"
   },
   { 
     title: "Kasir & Display", 
-    img: "/Landing/kasir1.jpg", 
+    img: "https://res.cloudinary.com/dogx3ps3r/image/upload/v1765320820/IMG_20251115_090056_mnxuzg.jpg", 
     // FIX: Menambahkan properti 'alt' yang hilang
     alt: "Area kasir dengan display makanan ringan sehat.", 
     tag: "Pelayanan"
   },
   { 
     title: "Teras Kafe", 
-    img: "/Landing/teras1.jpg", 
+    img: "/Landing/kasir1.jpg", 
     alt: "Area teras luar ruangan dengan tanaman hijau.",
     tag: "Outdoor"
   },
@@ -105,12 +106,19 @@ export function CafePortrait() {
   return (
     <section className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-center text-4xl font-extrabold text-gray-900 mb-4">
+        <AnimatedHeading 
+          level={2}
+          className="text-center text-4xl font-extrabold text-gray-900 mb-4"
+          delay={0.2}
+        >
           Rasakan Vibe Kami
-        </h2>
-        <p className="text-center text-lg text-gray-600 mb-12 max-w-2xl mx-auto">
+        </AnimatedHeading>
+        <AnimatedParagraph 
+          className="text-center text-lg text-gray-600 mb-12 max-w-2xl mx-auto"
+          delay={0.4}
+        >
           Tempat yang sempurna untuk ngopi, bekerja, atau sekadar menikmati smoothie terbaik di kota.
-        </p>
+        </AnimatedParagraph>
 
         {/* Horizontal Scroll Gallery */}
         <div

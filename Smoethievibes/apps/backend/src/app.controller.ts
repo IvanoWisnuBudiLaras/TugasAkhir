@@ -1,5 +1,6 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Inject } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service';
+import Redis from 'ioredis';
 
 /**
  * @controller Aplikasi
@@ -9,7 +10,11 @@ import { PrismaService } from './prisma/prisma.service';
  */
 @Controller()
 export class AppController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject('REDIS_CLIENT')
+    private readonly redisClient: Redis,
+  ) {}
 
   /**
    * @endpoint GET /health
@@ -19,29 +24,41 @@ export class AppController {
    */
   @Get('health')
   async getHealth() {
+    const health: any = {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      services: {
+        database: 'unknown',
+        redis: 'unknown',
+        api: 'running'
+      },
+      metrics: {
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+      }
+    };
+
     try {
-      // @test Validasi koneksi database
+      // Test database connection
       await this.prisma.$queryRaw`SELECT 1`;
-      
-      return {
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        services: {
-          database: 'connected',
-          api: 'running'
-        }
-      };
+      health.services.database = 'connected';
     } catch (error) {
-      return {
-        status: 'unhealthy',
-        timestamp: new Date().toISOString(),
-        services: {
-          database: 'disconnected',
-          api: 'running'
-        },
-        error: error instanceof Error ? error.message : 'Unknown error'
-      };
+      health.services.database = 'disconnected';
+      health.status = 'unhealthy';
+      health.services.error = error instanceof Error ? error.message : 'Unknown error';
     }
+
+    try {
+      // Test Redis connection
+      await this.redisClient.ping();
+      health.services.redis = 'connected';
+    } catch (error) {
+      health.services.redis = 'disconnected';
+      health.status = 'unhealthy';
+      health.services.redisError = error instanceof Error ? error.message : 'Unknown error';
+    }
+
+    return health;
   }
 
   @Get()
