@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/context/AuthContext";
 
 const API_URL = "http://localhost:3001";
 import DashboardGraph from "./DashboardGraph";
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const { isAuthenticated, user, authLoading } = useAuth();
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalProducts: 0,
@@ -17,6 +19,13 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Don't fetch stats if user is not authenticated or not admin
+    if (authLoading) return;
+    if (!isAuthenticated || user?.role !== 'ADMIN') {
+      router.push("/Auth?redirect=/admin");
+      return;
+    }
+
     const fetchStats = async () => {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -36,16 +45,23 @@ export default function AdminDashboard() {
           setStats(data);
         } else {
           console.error("Failed to fetch stats");
+          if (response.status === 401) {
+            // Token invalid, redirect to login
+            router.push("/Auth?redirect=/admin");
+          }
         }
       } catch (error) {
         console.error("Error fetching stats:", error);
+        if (error instanceof Error && error.message.includes('401')) {
+          router.push("/Auth?redirect=/admin");
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchStats();
-  }, [router]);
+  }, [router, isAuthenticated, user, authLoading]);
 
   return (
     <div className="space-y-6">

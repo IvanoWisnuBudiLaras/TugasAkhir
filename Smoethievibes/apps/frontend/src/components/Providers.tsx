@@ -7,6 +7,7 @@ import client from '@/lib/apollo-client';
 import Nav from './Nav';
 import Footer from './footer';
 import { CartProvider } from '@/app/Context/CartContext';
+import { AuthProvider } from '@/lib/context';
 
 // Lightweight top progress bar to improve perceived navigation speed
 function TopProgress() {
@@ -58,14 +59,17 @@ function TopProgress() {
 // @komponen Provider root untuk Apollo GraphQL dan Cart state management
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <CartProvider>
-      {/* @fitur GraphQL client provider untuk query/mutation */}
-      <ApolloProvider client={client}>
-        <TopProgress />
-        <Nav />
-        {children}
-        <Footer />
-      </ApolloProvider>
-    </CartProvider>
+    <AuthProvider>
+      {/* CartProvider membutuhkan AuthContext, jadi harus di dalam AuthProvider */}
+      <CartProvider>
+        {/* @fitur GraphQL client provider untuk query/mutation */}
+        <ApolloProvider client={client}>
+          <TopProgress />
+          <Nav />
+          {children}
+          <Footer />
+        </ApolloProvider>
+      </CartProvider>
+    </AuthProvider>
   );
 }

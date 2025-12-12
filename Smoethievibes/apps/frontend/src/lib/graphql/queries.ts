@@ -7,7 +7,6 @@ export const GET_CATEGORIES = gql`
       id
       name
       description
-      image
       createdAt
       updatedAt
     }
@@ -34,8 +33,6 @@ export const GET_PRODUCTS_BY_CATEGORY_SLUG = gql`
       category {
         id
         name
-        slug
-        image
       }
     }
   }
@@ -79,6 +76,24 @@ export const GET_PRODUCT_BY_SLUG = gql`
         name
         slug
       }
+    }
+  }
+`;
+
+// Query untuk mendapatkan user profile yang sedang login
+export const GET_ME = gql`
+  query GetMe {
+    me {
+      id
+      email
+      name
+      avatar
+      phone
+      address
+      role
+      isActive
+      createdAt
+      updatedAt
     }
   }
 `;

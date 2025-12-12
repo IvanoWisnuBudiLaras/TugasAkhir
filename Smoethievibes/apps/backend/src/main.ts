@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { NestFactory } from '@nestjs/core';
+﻿﻿import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
@@ -8,6 +8,8 @@ import { Request, Response } from 'express';
 import { INestApplication } from '@nestjs/common';
 import * as express from 'express';
 import { join } from 'path';
+import passport from 'passport';
+import session from 'express-session';
 
 // Helper function untuk menentukan content type berdasarkan extension
 function getImageContentType(filePath: string): string {
@@ -64,6 +66,22 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-apollo-tracing'],
   });
+
+  // @fitur Inisialisasi Passport.js untuk authentication
+  app.use(
+    session({
+      secret: configService.get('JWT_SECRET') || 'default-secret-change-this',
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      },
+    }),
+  );
+  app.use(passport.initialize());
+  app.use(passport.session());
 
   // @fitur Static file serving untuk uploads folder
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads'), {
