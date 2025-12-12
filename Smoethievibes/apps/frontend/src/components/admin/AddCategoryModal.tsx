@@ -30,9 +30,7 @@ export default function AddCategoryModal({ isOpen, onClose, onCategoryAdded }: A
 
     try {
       const token = localStorage.getItem("token");
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      
-      const response = await fetch(`${API_URL}/categories`, {
+      const response = await fetch("/api/categories", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -42,7 +40,7 @@ export default function AddCategoryModal({ isOpen, onClose, onCategoryAdded }: A
       });
 
       if (response.ok) {
-        alert("Kategori berhasil ditambahkan!");
+        alert("Category added successfully!");
         onCategoryAdded();
         onClose();
         // Reset form
@@ -51,7 +49,7 @@ export default function AddCategoryModal({ isOpen, onClose, onCategoryAdded }: A
           description: ""
         });
       } else {
-        let errorMessage = "Gagal menambahkan kategori";
+        let errorMessage = "Failed to add category";
         try {
           const errorData = await response.json();
           // Handle new error format from backend
@@ -68,7 +66,7 @@ export default function AddCategoryModal({ isOpen, onClose, onCategoryAdded }: A
       }
     } catch (error) {
       console.error("Error adding category:", error);
-      alert("Terjadi kesalahan jaringan. Silakan coba lagi.");
+      alert("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -80,7 +78,7 @@ export default function AddCategoryModal({ isOpen, onClose, onCategoryAdded }: A
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold">Tambah Kategori Baru</h2>
+          <h2 className="text-xl font-semibold">Add New Category</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -92,7 +90,7 @@ export default function AddCategoryModal({ isOpen, onClose, onCategoryAdded }: A
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Nama Kategori *
+              Category Name *
             </label>
             <input
               type="text"
@@ -102,13 +100,13 @@ export default function AddCategoryModal({ isOpen, onClose, onCategoryAdded }: A
               value={formData.name}
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              placeholder="Masukkan nama kategori"
+              placeholder="Enter category name"
             />
           </div>
 
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-              Deskripsi
+              Description
             </label>
             <textarea
               id="description"
@@ -117,7 +115,7 @@ export default function AddCategoryModal({ isOpen, onClose, onCategoryAdded }: A
               value={formData.description}
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-              placeholder="Masukkan deskripsi kategori (opsional)"
+              placeholder="Enter category description (optional)"
             />
           </div>
 
@@ -128,14 +126,14 @@ export default function AddCategoryModal({ isOpen, onClose, onCategoryAdded }: A
               className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               disabled={loading}
             >
-              Batal
+              Cancel
             </button>
             <button
               type="submit"
               className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
             >
-              {loading ? "Menambahkan..." : "Tambah Kategori"}
+              {loading ? "Adding..." : "Add Category"}
             </button>
           </div>
         </form>

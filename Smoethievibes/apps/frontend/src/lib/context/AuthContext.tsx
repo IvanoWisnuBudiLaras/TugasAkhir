@@ -48,11 +48,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authAPI.getMe();
       if (response.data) {
         setUser(response.data);
-      } else {
-        setUser(null);
       }
     } catch (error) {
-      // Log error yang sebenarnya, bukan "Not authenticated"
       console.error("Error checking auth status:", error);
       setUser(null);
     } finally {

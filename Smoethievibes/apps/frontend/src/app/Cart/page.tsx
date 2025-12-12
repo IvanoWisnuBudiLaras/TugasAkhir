@@ -4,8 +4,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Trash2, Minus, Plus, ShoppingCart, ArrowRight, CheckCircle } from 'lucide-react';
 import { useCart } from '@/app/Context/CartContext';
-// import { useAuth } from '@/lib/context';
-// import { useRouter } from 'next/navigation';
 
 export default function CartPage() {
     const { items: cartItems, removeItem, updateQuantity } = useCart();
@@ -42,76 +40,23 @@ export default function CartPage() {
 
 
     // Handler Checkout (Mengalihkan ke WhatsApp)
-    const handleCheckout = async () => {
-        /**
-         * VALIDASI USER LOGIN
-         * 
-         * Fungsi ini memvalidasi apakah user sudah login sebelum melakukan checkout.
-         * Jika user belum login (isAuthenticated = false), maka:
-         * 1. Tampilkan pesan notifikasi untuk login terlebih dahulu
-         * 2. Redirect ke halaman login setelah 2 detik
-         * 3. Hentikan proses checkout
-         * 
-         * Logika ini mencegah user yang belum login untuk membuat pesanan,
-         * sehingga memastikan semua pesanan tercatat dengan identitas user yang jelas.
-         */
-        // if (!isAuthenticated) {
-        //     setCheckoutMessage("Silakan login terlebih dahulu untuk melakukan pemesanan.");
-        //     setTimeout(() => {
-        //         router.push('/Auth');
-        //     }, 2000);
-        //     return;
-        // }
-
+    const handleCheckout = () => {
         if (cartItems.length > 0) {
-            try {
-                // Buat order di database terlebih dahulu
-                const orderData = {
-                    orderType: 'TAKEAWAY',
-                    orderItems: cartItems.map(item => ({
-                        productId: item.id.toString(),
-                        quantity: item.quantity,
-                        price: item.price
-                    })),
-                    notes: 'Order via WhatsApp'
-                };
+            const message = createOrderMessage();
+            
+            // 1. Enkode pesan agar aman untuk URL
+            const encodedMessage = encodeURIComponent(message);
+            
+            // 2. Buat URL WA
+            const waUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
-                const response = await fetch('/api/orders', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(orderData),
-                });
-
-                if (!response.ok) {
-                    throw new Error('Gagal membuat order');
-                }
-
-                const orderResult = await response.json();
-                
-                // Buat pesan WhatsApp dengan nomor order
-                const message = createOrderMessage();
-                const orderMessage = `*Order #${orderResult.id}*\n\n${message}`;
-                
-                // 1. Enkode pesan agar aman untuk URL
-                const encodedMessage = encodeURIComponent(orderMessage);
-                
-                // 2. Buat URL WA
-                const waUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
-
-                // 3. Buka link di tab baru
-                window.open(waUrl, '_blank');
-                
-                // 4. Berikan notifikasi di UI
-                setCheckoutMessage("Order berhasil dibuat! Anda dialihkan ke WhatsApp untuk konfirmasi.");
-                
-                // Kosongkan cart setelah order berhasil
-                // Di lingkungan nyata, di sini Anda akan memanggil fungsi clearCart() setelah pesanan berhasil terkirim.
-                
-            } catch {
-                setCheckoutMessage("Gagal membuat order. Silakan coba lagi.");
-            }
+            // 3. Buka link di tab baru
+            window.open(waUrl, '_blank');
+            
+            // 4. Berikan notifikasi di UI
+            setCheckoutMessage("Anda dialihkan ke WhatsApp untuk menyelesaikan pesanan.");
+            
+            // Di lingkungan nyata, di sini Anda akan memanggil fungsi clearCart() setelah pesanan berhasil terkirim.
         } else {
             setCheckoutMessage("Keranjang Anda kosong. Silakan tambahkan menu terlebih dahulu.");
         }

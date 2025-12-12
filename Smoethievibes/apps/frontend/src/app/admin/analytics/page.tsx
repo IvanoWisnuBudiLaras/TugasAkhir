@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/context/AuthContext";
 
 const API_URL = "http://localhost:3001";
 
@@ -46,7 +45,6 @@ type TabType = 'products' | 'customers' | 'inventory' | 'daily';
 
 export default function AnalyticsPage() {
   const router = useRouter();
-  const { isAuthenticated, user, authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('products');
   
@@ -56,13 +54,6 @@ export default function AnalyticsPage() {
   const [dailySummary, setDailySummary] = useState<DailySummary[]>([]);
 
   useEffect(() => {
-    // Don't fetch analytics if user is not authenticated or not admin
-    if (authLoading) return;
-    if (!isAuthenticated || user?.role !== 'ADMIN') {
-      router.push("/Auth?redirect=/admin/analytics");
-      return;
-    }
-
     const fetchAnalytics = async () => {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -80,10 +71,6 @@ export default function AnalyticsPage() {
         if (productsResponse.ok) {
           const productsData = await productsResponse.json();
           setPopularProducts(productsData);
-        } else if (productsResponse.status === 401) {
-          // Token invalid, redirect to login
-          router.push("/Auth?redirect=/admin/analytics");
-          return;
         }
 
         // Fetch customer analytics
@@ -95,9 +82,6 @@ export default function AnalyticsPage() {
         if (customersResponse.ok) {
           const customersData = await customersResponse.json();
           setCustomers(customersData);
-        } else if (customersResponse.status === 401) {
-          router.push("/Auth?redirect=/admin/analytics");
-          return;
         }
 
         // Fetch inventory alerts
@@ -109,9 +93,6 @@ export default function AnalyticsPage() {
         if (inventoryResponse.ok) {
           const inventoryData = await inventoryResponse.json();
           setInventoryAlerts(inventoryData);
-        } else if (inventoryResponse.status === 401) {
-          router.push("/Auth?redirect=/admin/analytics");
-          return;
         }
 
         // Fetch daily summary
@@ -123,23 +104,17 @@ export default function AnalyticsPage() {
         if (dailyResponse.ok) {
           const dailyData = await dailyResponse.json();
           setDailySummary(dailyData);
-        } else if (dailyResponse.status === 401) {
-          router.push("/Auth?redirect=/admin/analytics");
-          return;
         }
 
       } catch (error) {
         console.error("Error fetching analytics:", error);
-        if (error instanceof Error && error.message.includes('401')) {
-          router.push("/Auth?redirect=/admin/analytics");
-        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchAnalytics();
-  }, [router, isAuthenticated, user, authLoading]);
+  }, [router]);
 
   const handleExportExcel = async (type: string) => {
     const token = localStorage.getItem("token");

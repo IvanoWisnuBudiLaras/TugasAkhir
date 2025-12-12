@@ -1,4 +1,4 @@
- import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OrderSubscriptionService } from './order-subscription.service';
@@ -40,60 +40,26 @@ export class OrderService {
   }
 
   async findAll() {
-    try {
-      const cacheKey = this.getCacheKey('all');
-      
-      // Try to get from cache first
-      try {
-        const cached = await this.redisClient.get(cacheKey);
-        if (cached) {
-          return JSON.parse(cached);
-        }
-      } catch (redisError) {
-        console.warn('Redis cache get failed, falling back to database:', redisError);
-        // Continue to database if Redis fails
-      }
+    const cacheKey = this.getCacheKey('all');
+    const cached = await this.redisClient.get(cacheKey);
+    
+    if (cached) {
+      return JSON.parse(cached);
+    }
 
-      const orders = await this.prisma.order.findMany({
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          },
-          orderItems: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  price: true,
-                  image: true
-                }
-              },
-            },
+    const orders = await this.prisma.order.findMany({
+      include: {
+        user: true,
+        orderItems: {
+          include: {
+            product: true,
           },
         },
-        orderBy: {
-          createdAt: 'desc'
-        }
-      });
+      },
+    });
 
-      // Try to cache the result, but don't fail if Redis is down
-      try {
-        await this.redisClient.setex(cacheKey, this.CACHE_TTL, JSON.stringify(orders));
-      } catch (redisCacheError) {
-        console.warn('Redis cache set failed:', redisCacheError);
-        // Continue without caching
-      }
-
-      return orders;
-    } catch (dbError) {
-      console.error('Database error in findAll orders:', dbError);
-      throw new Error('Failed to fetch orders from database');
-    }
+    await this.redisClient.setex(cacheKey, this.CACHE_TTL, JSON.stringify(orders));
+    return orders;
   }
 
   async findOne(id: string) {
