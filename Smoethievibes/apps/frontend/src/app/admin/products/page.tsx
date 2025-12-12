@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from 'next/image';
+import { Plus } from "lucide-react";
+import AddProductModal from "@/components/admin/AddProductModal";
 
 const API_URL = "http://localhost:3001";
 
@@ -19,6 +21,7 @@ export default function ProductsPage() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -38,11 +41,20 @@ export default function ProductsPage() {
         if (response.ok) {
           const data = await response.json();
           setProducts(data);
+        } else if (response.status === 403) {
+          console.error("Access denied: Insufficient permissions to view products");
+          router.push("/unauthorized");
+        } else if (response.status === 401) {
+          console.error("Authentication required: Token may be expired");
+          localStorage.removeItem("token");
+          router.push("/Auth");
         } else {
-          console.error("Failed to fetch products");
+          console.error(`Failed to fetch products: HTTP ${response.status} - ${response.statusText}`);
+          const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+          console.error('Error details:', errorData);
         }
       } catch (error) {
-        console.error("Error fetching products:", error);
+        console.error("Network error fetching products:", error);
       } finally {
         setLoading(false);
       }
@@ -53,7 +65,16 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-semibold tracking-tight">Products</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-3xl font-semibold tracking-tight">Products</h2>
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Product
+        </button>
+      </div>
 
       {loading ? (
         <p className="text-gray-500">Loading products...</p>
@@ -92,6 +113,12 @@ export default function ProductsPage() {
           ))}
         </div>
       )}
+
+      <AddProductModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onProductAdded={() => window.location.reload()}
+      />
     </div>
   );
 }

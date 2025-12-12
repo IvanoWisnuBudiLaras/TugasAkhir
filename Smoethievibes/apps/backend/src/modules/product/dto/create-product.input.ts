@@ -8,6 +8,11 @@ export class CreateProductInput {
   @IsString()
   name!: string;
 
+  @Field()
+  @IsNotEmpty()
+  @IsString()
+  slug!: string;
+
   @Field({ nullable: true })
   @IsOptional()
   @IsString()

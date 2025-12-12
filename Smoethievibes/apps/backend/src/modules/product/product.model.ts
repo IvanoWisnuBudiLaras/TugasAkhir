@@ -1,4 +1,5 @@
 import { ObjectType, Field, ID, Float, Int } from "@nestjs/graphql";
+import { Category } from "../category/category.model";
 
 @ObjectType()
 export class Product {
@@ -23,6 +24,9 @@ export class Product {
 
   @Field(() => String)
   categoryId!: string;
+
+  @Field(() => Category)
+  category!: Category;
 
   // @deskripsi Gunakan tipe eksplisit untuk Date agar GraphQL mengenali scalar Date
   @Field(() => Date)

@@ -40,4 +40,11 @@ export class ProductResolver {
   async findByCategory(@Args("categoryId", { type: () => ID }) categoryId: string) {
     return this.productService.findByCategory(categoryId);
   }
+
+  @Query(() => [Product], { name: "productsByCategorySlug" })
+  async findByCategorySlug(@Args("categorySlug") categorySlug: string) {
+    return this.productService.findByCategorySlug(categorySlug);
+  }
+
+
 }

@@ -3,8 +3,12 @@
 
 import Link from "next/link";
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
+import { AnimatedHeading, AnimatedParagraph, ScrollText } from "@/components/animations";
 
 export default function ContactPage() {
+  
+
+
   // Lokasi Peta yang Diberikan Pengguna
   const mapIframe = (
     <iframe 
@@ -27,22 +31,22 @@ export default function ContactPage() {
         
         {/* Header Section */}
         <header className="text-center mb-12">
-          <p className="text-sm font-semibold text-green-600 uppercase tracking-widest">
+          <AnimatedParagraph className="text-sm font-semibold text-green-600 uppercase tracking-widest" delay={0.1}>
             Hubungi Kami
-          </p>
-          <h1 className="text-5xl font-extrabold text-gray-900 mt-2">
+          </AnimatedParagraph>
+          <AnimatedHeading className="text-5xl font-extrabold text-gray-900 mt-2" delay={0.2}>
             Kontak SmoethieVibe
-          </h1>
-          <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
+          </AnimatedHeading>
+          <AnimatedParagraph className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto" delay={0.4}>
             Kami senang mendengar masukan Anda! Silakan hubungi kami melalui saluran berikut.
-          </p>
+          </AnimatedParagraph>
         </header>
 
         {/* Contact Info Grid */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           
           {/* Card 1: Nomor Telepon */}
-          <div className="bg-white p-8 rounded-2xl shadow-xl border-t-4 border-green-500 transition duration-300 transform hover:shadow-2xl">
+          <ScrollText className="bg-white p-8 rounded-2xl shadow-xl border-t-4 border-green-500 transition duration-300 transform hover:shadow-2xl" delay={0.6}>
             <Phone className="w-8 h-8 text-green-600 mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Telepon</h3>
             <p className="text-gray-600">
@@ -54,10 +58,10 @@ export default function ContactPage() {
             >
               +62 812-3456-7890
             </Link>
-          </div>
+          </ScrollText>
 
           {/* Card 2: Email */}
-          <div className="bg-white p-8 rounded-2xl shadow-xl border-t-4 border-green-500 transition duration-300 transform hover:shadow-2xl">
+          <ScrollText className="bg-white p-8 rounded-2xl shadow-xl border-t-4 border-green-500 transition duration-300 transform hover:shadow-2xl" delay={0.8}>
             <Mail className="w-8 h-8 text-green-600 mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Email</h3>
             <p className="text-gray-600">
@@ -69,10 +73,10 @@ export default function ContactPage() {
             >
               info@smoethievibe.com
             </Link>
-          </div>
+          </ScrollText>
 
           {/* Card 3: Lokasi Fisik */}
-          <div className="bg-white p-8 rounded-2xl shadow-xl border-t-4 border-green-500 transition duration-300 transform hover:shadow-2xl">
+          <ScrollText className="bg-white p-8 rounded-2xl shadow-xl border-t-4 border-green-500 transition duration-300 transform hover:shadow-2xl" delay={1.0}>
             <MapPin className="w-8 h-8 text-green-600 mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Alamat Kafe</h3>
             <p className="text-gray-600">
@@ -86,11 +90,11 @@ export default function ContactPage() {
             >
               Lihat di Peta
             </Link>
-          </div>
+          </ScrollText>
         </section>
 
         {/* Operational Hours and Location Section */}
-        <section className="bg-white rounded-2xl p-8 md:p-12 shadow-2xl">
+        <ScrollText className="bg-white rounded-2xl p-8 md:p-12 shadow-2xl" delay={1.2}>
           <div className="grid md:grid-cols-2 gap-8 items-start">
             
             {/* Jam Operasional */}
@@ -127,7 +131,9 @@ export default function ContactPage() {
             </div>
             
           </div>
-        </section>
+        </ScrollText>
+        
+
         
       </div>
     </div>

@@ -1,16 +1,29 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, HttpException, HttpStatus } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { UserRole } from '@prisma/client';
 
 @Controller('orders')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class OrderController {
   constructor(private readonly orderService: OrderService) { }
 
   @Get()
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   async findAll() {
-    return this.orderService.findAll();
+    try {
+      return await this.orderService.findAll();
+    } catch (error) {
+      console.error('Error in findAll orders:', error);
+      throw new HttpException({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: 'Failed to fetch orders',
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
+      }, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   @Get('my-orders')

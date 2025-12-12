@@ -4,27 +4,28 @@
 import React from "react";
 import Image from "next/image";
 import { Quote, Star } from "lucide-react"; // Import Quote dan Star
+import { AnimatedHeading, AnimatedParagraph, ScrollText } from "./animations";
 
 // Data Testimoni (Disesuaikan untuk review produk kafe)
 const reviewData = [
   {
     nama: "Wisnu Ibrahimma F.",
     rating: 5,
-    img: "/Profile/Profil.jpeg", // Gunakan foto profil
+    img: "https://res.cloudinary.com/dogx3ps3r/image/upload/v1765319627/uowktviwr58gqkz3iapg.jpg", // Gunakan foto profil
     pesan: "Smoothie Bowl-nya luar biasa! Rasanya segar, porsinya pas, dan toppingnya premium. Benar-benar *vibe* sehat yang saya cari.",
     order: "Smoothie Bowl"
   },
   {
     nama: "Rayhan Fathurrahman R.",
     rating: 5,
-    img: "/Menu/green dream.png", // Gantilah dengan URL foto profil jika ada
+    img: "https://res.cloudinary.com/dogx3ps3r/image/upload/v1765319702/nghnqhcqaucu6fgssziy.jpg", // Gantilah dengan URL foto profil jika ada
     pesan: "Green Dream adalah jus detox terbaik yang pernah saya coba. Energinya terasa sepanjang hari. Pelayanan di kafe juga ramah!",
     order: "Green Dream Juice"
   },
   {
-    nama: "Suyuful Bitriq A.",
+    nama: "Daffa Farrel",
     rating: 4,
-    img: "/Menu/salad sayur.png", // Gantilah dengan URL foto profil jika ada
+    img: "https://res.cloudinary.com/dogx3ps3r/image/upload/v1765319987/ddkaul1aj1xnufr2p4cx.jpg", // Gantilah dengan URL foto profil jika ada
     pesan: "Salad Sayur dan Ayamnya enak dan mengenyangkan. Hanya saja antrian agak panjang saat jam makan siang. Rekomended!",
     order: "Crispy Chicken UP"
   },
@@ -50,18 +51,26 @@ export function Testimoni() {
   return (
     <section className="py-16 px-6 bg-white">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-4xl font-extrabold text-center text-gray-900 mb-2">
+        <AnimatedHeading 
+          level={2}
+          className="text-4xl font-extrabold text-center text-gray-900 mb-2"
+          delay={0.2}
+        >
           Apa Kata Pelanggan Kami?
-        </h2>
+        </AnimatedHeading>
 
-        <p className="text-center text-lg text-gray-600 mb-12 max-w-2xl mx-auto">
+        <AnimatedParagraph 
+          className="text-center text-lg text-gray-600 mb-12 max-w-2xl mx-auto"
+          delay={0.4}
+        >
           Lihat ulasan jujur tentang kelezatan menu dan kenyamanan vibe kafe SmoethieVibe.
-        </p>
+        </AnimatedParagraph>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {reviewData.map((t, i) => (
-            <div 
+            <ScrollText
                 key={i} 
+                delay={0.6 + (i * 0.2)}
                 className="bg-gray-50 p-6 rounded-xl shadow-lg border-t-4 border-green-500
                            hover:shadow-xl transition-shadow duration-300"
             >
@@ -98,7 +107,7 @@ export function Testimoni() {
                   </p>
                 </div>
               </div>
-            </div>
+            </ScrollText>
           ))}
         </div>
       </div>

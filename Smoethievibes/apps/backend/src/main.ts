@@ -6,6 +6,30 @@ import helmet from 'helmet';
 import { ValidationPipe } from './common/pipes/validation.pipe';
 import { Request, Response } from 'express';
 import { INestApplication } from '@nestjs/common';
+import * as express from 'express';
+import { join } from 'path';
+import passport from 'passport';
+import session from 'express-session';
+
+// Helper function untuk menentukan content type berdasarkan extension
+function getImageContentType(filePath: string): string {
+  const ext = filePath.split('.').pop()?.toLowerCase();
+  switch (ext) {
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'png':
+      return 'image/png';
+    case 'gif':
+      return 'image/gif';
+    case 'webp':
+      return 'image/webp';
+    case 'svg':
+      return 'image/svg+xml';
+    default:
+      return 'application/octet-stream';
+  }
+}
 
 async function bootstrap() {
   // @fitur Inisialisasi aplikasi NestJS dengan module utama
@@ -42,6 +66,41 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-apollo-tracing'],
   });
+
+  // @fitur Inisialisasi Passport.js untuk authentication
+  app.use(
+    session({
+      secret: configService.get('JWT_SECRET') || 'default-secret-change-this',
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      },
+    }),
+  );
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  // @fitur Static file serving untuk uploads folder
+  app.use('/uploads', express.static(join(__dirname, '..', 'uploads'), {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, path) => {
+      // Set CORS headers untuk images
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD');
+      res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+      
+      // Set cache headers untuk images
+      if (path.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+        res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day cache
+        res.setHeader('Content-Type', getImageContentType(path));
+      }
+    },
+  }));
 
   // @fitur Global validation pipe dengan custom error handling
   app.useGlobalPipes(new ValidationPipe(configService));

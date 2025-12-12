@@ -2,61 +2,46 @@
 import { ConfigModule } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { Request, Response } from 'express';
-import { PrismaModule } from './prisma/prisma.module';
+import { join } from 'path';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { ProductModule } from './modules/product/product.module';
+import { CategoryModule } from './modules/category/category.module';
 import { OrderModule } from './modules/order/order.module';
-import { ExportModule } from './exports/export.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
-import { AppController } from './app.controller';
-import { EmailModule } from './modules/email/email.module';
-import {
-  jwtConfig,
-  corsConfig,
-  swaggerAppConfig
-} from './config';
-import messagesConfig from './config/messages.config';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { ExportModule } from './exports/export.module';
+import { PrismaModule } from './prisma/prisma.module';
 import { validate } from './config/env.validation';
+import corsConfig from './config/cors.config';
+import { jwtConfig } from './config/jwt.config';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      validate,
-      load: [
-        jwtConfig,
-        messagesConfig,
-        corsConfig,
-        swaggerAppConfig
-      ],
+      validate: validate,
+      load: [corsConfig, jwtConfig],
     }),
-    // @fitur Konfigurasi GraphQL Apollo Server untuk schema generation dan playground
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: 'schema.gql',
+      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       playground: true,
       introspection: true,
-      context: ({ req, res }: { req: Request; res: Response }) => ({ req, res }),
+      context: ({ req, res }: { req: any; res: any }) => ({ req, res }),
     }),
     PrismaModule,
-    // @fitur Autentikasi & otorisasi (JWT + Google OAuth)
     AuthModule,
-    // @fitur Manajemen pengguna & operasi profil
     UserModule,
-    // @fitur Katalog produk & manajemen inventaris
     ProductModule,
-    // @fitur Pemrosesan & pelacakan pesanan
+    CategoryModule,
     OrderModule,
-    // @fitur Fungsionalitas ekspor data
-    ExportModule,
-    // @fitur Dashboard admin & analitik
     DashboardModule,
-    // @fitur Layanan email (OTP, notifikasi)
-    EmailModule,
+    AnalyticsModule,
+    ExportModule,
   ],
   controllers: [AppController],
   providers: [],
 })
-export class AppModule { }
+export class AppModule {}
