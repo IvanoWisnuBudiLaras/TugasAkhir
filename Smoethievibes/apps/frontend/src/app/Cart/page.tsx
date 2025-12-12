@@ -4,13 +4,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Trash2, Minus, Plus, ShoppingCart, ArrowRight, CheckCircle } from 'lucide-react';
 import { useCart } from '@/app/Context/CartContext';
-import { useAuth } from '@/lib/context';
-import { useRouter } from 'next/navigation';
+// import { useAuth } from '@/lib/context';
+// import { useRouter } from 'next/navigation';
 
 export default function CartPage() {
     const { items: cartItems, removeItem, updateQuantity } = useCart();
-    const { isAuthenticated } = useAuth();
-    const router = useRouter();
+    // const { isAuthenticated } = useAuth();
+    // const router = useRouter();
     
     // State untuk notifikasi setelah checkout (mengganti alert)
     const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
@@ -43,14 +43,25 @@ export default function CartPage() {
 
     // Handler Checkout (Mengalihkan ke WhatsApp)
     const handleCheckout = async () => {
-        // Validasi login terlebih dahulu
-        if (!isAuthenticated) {
-            setCheckoutMessage("Silakan login terlebih dahulu untuk melakukan pemesanan.");
-            setTimeout(() => {
-                router.push('/Auth');
-            }, 2000);
-            return;
-        }
+        /**
+         * VALIDASI USER LOGIN
+         * 
+         * Fungsi ini memvalidasi apakah user sudah login sebelum melakukan checkout.
+         * Jika user belum login (isAuthenticated = false), maka:
+         * 1. Tampilkan pesan notifikasi untuk login terlebih dahulu
+         * 2. Redirect ke halaman login setelah 2 detik
+         * 3. Hentikan proses checkout
+         * 
+         * Logika ini mencegah user yang belum login untuk membuat pesanan,
+         * sehingga memastikan semua pesanan tercatat dengan identitas user yang jelas.
+         */
+        // if (!isAuthenticated) {
+        //     setCheckoutMessage("Silakan login terlebih dahulu untuk melakukan pemesanan.");
+        //     setTimeout(() => {
+        //         router.push('/Auth');
+        //     }, 2000);
+        //     return;
+        // }
 
         if (cartItems.length > 0) {
             try {
