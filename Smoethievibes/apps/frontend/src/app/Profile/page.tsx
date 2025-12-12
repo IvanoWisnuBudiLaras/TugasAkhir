@@ -46,7 +46,7 @@ export default function ProfilePage() {
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(false);
 
-    // Editable profile fields
+    // Editable fields
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [address, setAddress] = useState('');
@@ -67,6 +67,7 @@ export default function ProfilePage() {
                 });
                 if (!profileRes.ok) throw new Error('Failed to fetch profile');
                 const profileData: User = await profileRes.json();
+
                 setProfile(profileData);
                 setName(profileData.name || '');
                 setPhone(profileData.phone || '');
@@ -110,9 +111,9 @@ export default function ProfilePage() {
             setProfile(updated);
             alert('Profile updated successfully!');
         } catch (err) {
-                console.error(err);
-                setError('Failed to update profile');
-            } finally {
+            console.error(err);
+            setError('Failed to update profile');
+        } finally {
             setUpdating(false);
         }
     };
@@ -128,6 +129,7 @@ export default function ProfilePage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 py-20 px-4">
             <div className="max-w-4xl mx-auto">
+
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -142,31 +144,31 @@ export default function ProfilePage() {
                 <div className="flex justify-center gap-4 mb-8">
                     <button
                         onClick={() => setActiveTab('profile')}
-                        className={`px-6 py-3 rounded-full font-medium transition ${activeTab === 'profile'
-                            ? 'bg-green-600 text-white shadow-lg'
-                            : 'bg-white text-gray-600 hover:bg-gray-50'
-                            }`}
+                        className={`px-6 py-3 rounded-full font-medium transition ${
+                            activeTab === 'profile'
+                                ? 'bg-green-600 text-white shadow-lg'
+                                : 'bg-white text-gray-600 hover:bg-gray-50'
+                        }`}
                     >
                         Profile Settings
                     </button>
+
                     <button
                         onClick={() => setActiveTab('orders')}
-                        className={`px-6 py-3 rounded-full font-medium transition ${activeTab === 'orders'
-                            ? 'bg-green-600 text-white shadow-lg'
-                            : 'bg-white text-gray-600 hover:bg-gray-50'
-                            }`}
+                        className={`px-6 py-3 rounded-full font-medium transition ${
+                            activeTab === 'orders'
+                                ? 'bg-green-600 text-white shadow-lg'
+                                : 'bg-white text-gray-600 hover:bg-gray-50'
+                        }`}
                     >
                         Order History
                     </button>
                 </div>
 
-                {/* Tab Content */}
+                {/* CONTENT */}
                 {activeTab === 'profile' ? (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="bg-white rounded-2xl shadow-xl p-8"
-                    >
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-2xl shadow-xl p-8">
+
                         {error && <p className="text-red-600 mb-4">{error}</p>}
 
                         <div className="space-y-6">
@@ -219,7 +221,6 @@ export default function ProfilePage() {
                                     className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                 />
                                 {avatar && (
-                                    /* eslint-disable-next-line @next/next/no-img-element */
                                     <img src={avatar} alt="Avatar preview" className="mt-3 w-24 h-24 rounded-full object-cover" />
                                 )}
                             </div>
@@ -234,11 +235,7 @@ export default function ProfilePage() {
                         </div>
                     </motion.div>
                 ) : (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="space-y-4"
-                    >
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                         {orders.length === 0 ? (
                             <div className="bg-white rounded-2xl shadow p-8 text-center text-gray-500">
                                 No orders yet
@@ -248,13 +245,23 @@ export default function ProfilePage() {
                                 <div key={order.id} className="bg-white rounded-2xl shadow p-6">
                                     <div className="flex justify-between items-start mb-4">
                                         <div>
-                                            <h3 className="font-bold text-lg">Order #{order.queueNumber || order.id.substring(0, 8)}</h3>
-                                            <p className="text-sm text-gray-500">{new Date(order.createdAt).toLocaleDateString()}</p>
+                                            <h3 className="font-bold text-lg">
+                                                Order #{order.queueNumber || order.id.substring(0, 8)}
+                                            </h3>
+                                            <p className="text-sm text-gray-500">
+                                                {new Date(order.createdAt).toLocaleDateString()}
+                                            </p>
                                         </div>
-                                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${order.status === 'DELIVERED' ? 'bg-green-100 text-green-700' :
-                                            order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
-                                                'bg-blue-100 text-blue-700'
-                                            }`}>
+
+                                        <span
+                                            className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                                order.status === 'DELIVERED'
+                                                    ? 'bg-green-100 text-green-700'
+                                                    : order.status === 'PENDING'
+                                                    ? 'bg-yellow-100 text-yellow-700'
+                                                    : 'bg-blue-100 text-blue-700'
+                                            }`}
+                                        >
                                             {order.status}
                                         </span>
                                     </div>
@@ -268,8 +275,12 @@ export default function ProfilePage() {
                                         <div className="space-y-2 mb-4">
                                             {order.orderItems.map((item) => (
                                                 <div key={item.id} className="flex justify-between text-sm">
-                                                    <span>{item.quantity}x {item.product.name}</span>
-                                                    <span>Rp {(item.price * item.quantity).toLocaleString()}</span>
+                                                    <span>
+                                                        {item.quantity}x {item.product.name}
+                                                    </span>
+                                                    <span>
+                                                        Rp {(item.price * item.quantity).toLocaleString()}
+                                                    </span>
                                                 </div>
                                             ))}
                                         </div>
@@ -280,7 +291,9 @@ export default function ProfilePage() {
                                         </div>
 
                                         {order.notes && (
-                                            <p className="text-sm text-gray-600 mt-3 italic">Note: {order.notes}</p>
+                                            <p className="text-sm text-gray-600 mt-3 italic">
+                                                Note: {order.notes}
+                                            </p>
                                         )}
                                     </div>
                                 </div>

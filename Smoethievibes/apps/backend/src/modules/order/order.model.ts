@@ -1,5 +1,5 @@
 import { ObjectType, Field, ID, Int, registerEnumType } from "@nestjs/graphql";
-import { OrderStatus, OrderType } from "@prisma/client";
+import { OrderStatus, OrderType } from "../../common/enums";
 import { OrderItem } from "./order-item.model";
 
 registerEnumType(OrderStatus, {

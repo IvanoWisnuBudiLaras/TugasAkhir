@@ -9,13 +9,13 @@ import { AnimatedHeading, AnimatedParagraph } from "./animations";
 const cafePhotos = [
   { 
     title: "Zona Santai", 
-    img: "https://res.cloudinary.com/dogx3ps3r/image/upload/v1765320842/IMG_20251115_081321_dwieqq.jpg", 
+    img: "/Landing/kasir1.jpg", 
     alt: "Foto meja dan kursi kayu di sudut kafe yang nyaman.",
     tag: "Interior"
   },
   { 
     title: "Sudut Penuh Cahaya", 
-    img: "https://res.cloudinary.com/dogx3ps3r/image/upload/v1765320858/IMG_20251115_085941_yfch2j.jpg", 
+    img: "/Landing/kasir2.jpg", 
     alt: "Area bar smoothie dengan cahaya alami yang masuk.",
     tag: "Bar"
   },
@@ -35,7 +35,7 @@ const cafePhotos = [
   },
   { 
     title: "Teras Kafe", 
-    img: "https://res.cloudinary.com/dogx3ps3r/image/upload/v1765320848/IMG_20251115_085810_dwfw5c.jpg", 
+    img: "/Landing/depan.jpg", 
     alt: "Area teras luar ruangan dengan tanaman hijau.",
     tag: "Outdoor"
   },
