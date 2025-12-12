@@ -4,13 +4,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Trash2, Minus, Plus, ShoppingCart, ArrowRight, CheckCircle } from 'lucide-react';
 import { useCart } from '@/app/Context/CartContext';
-import { useAuth } from '@/app/Context/AuthContext';
-import { useRouter } from 'next/navigation';
 
 export default function CartPage() {
     const { items: cartItems, removeItem, updateQuantity } = useCart();
-    const { isAuthenticated } = useAuth();
-    const router = useRouter();
     
     // State untuk notifikasi setelah checkout (mengganti alert)
     const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
@@ -30,8 +26,8 @@ export default function CartPage() {
 
         cartItems.forEach((item, index) => {
             message += `*${index + 1}. ${item.name}* (x${item.quantity})\n`;
-            message += `     Harga Satuan: Rp ${item.price.toLocaleString('id-ID')}\n`;
-            message += `     Subtotal: Rp ${(item.price * item.quantity).toLocaleString('id-ID')}\n`;
+            message += `     Harga Satuan: Rp ${item.price.toLocaleString('id-ID')}\n`;
+            message += `     Subtotal: Rp ${(item.price * item.quantity).toLocaleString('id-ID')}\n`;
             message += `------------------------------\n`;
         });
 

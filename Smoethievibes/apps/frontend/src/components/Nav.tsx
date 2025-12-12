@@ -221,7 +221,8 @@ export default function Nav() {
               <li><Link href="/Tentang" onClick={() => setIsMobileMenuOpen(false)}>Tentang</Link></li>
               <li><Link href="/Contact" onClick={() => setIsMobileMenuOpen(false)}>Contact</Link></li>
 
-              {isAuthenticated && <li><Link href="/Profile" onClick={() => setIsMobileMenuOpen(false)}>Profile</Link></li>              {user?.role === 'ADMIN' && <li><Link href="/admin" onClick={() => setIsMobileMenuOpen(false)}>Admin Dashboard</Link></li>}
+              {isAuthenticated && <li><Link href="/Profile" onClick={() => setIsMobileMenuOpen(false)}>Profile</Link></li>}
+              {user?.role === 'ADMIN' && <li><Link href="/admin" onClick={() => setIsMobileMenuOpen(false)}>Admin Dashboard</Link></li>}
 
               <li className="pt-2 border-t border-gray-200">
                 {isAuthenticated ? (
