@@ -26,7 +26,7 @@ export default function UsersPage() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      router.push("/Auth");
+      router.push("/login");
       return;
     }
 
@@ -42,17 +42,10 @@ export default function UsersPage() {
         console.log("Response status:", res.status);
         console.log("Response ok:", res.ok);
         if (!res.ok) {
-          return res.text().then(text => {
-            try {
-              const errData = JSON.parse(text);
-              console.error("Server error response:", errData);
-              throw new Error(errData.message || `HTTP ${res.status}: Failed to fetch users`);
-            } catch {
-              console.error("Server error response (raw):", text);
-              throw new Error(`HTTP ${res.status}: Failed to fetch users - ${text}`);
-            }
-          }).catch((parseError) => {
-            console.error("Error parsing error response:", parseError);
+          return res.json().then(errData => {
+            console.error("Server error response:", errData);
+            throw new Error(errData.message || `HTTP ${res.status}: Failed to fetch users`);
+          }).catch(() => {
             throw new Error(`HTTP ${res.status}: Failed to fetch users`);
           });
         }
@@ -60,10 +53,6 @@ export default function UsersPage() {
       })
       .then((data) => {
         console.log("Users data received:", data);
-        if (!Array.isArray(data)) {
-          console.error("Expected array but got:", typeof data, data);
-          throw new Error("Invalid response format: expected array of users");
-        }
         setUsers(data);
         setLoading(false);
       })

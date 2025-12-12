@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -14,16 +14,7 @@ export class OrderController {
   @Get()
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
   async findAll() {
-    try {
-      return await this.orderService.findAll();
-    } catch (error) {
-      console.error('Error in findAll orders:', error);
-      throw new HttpException({
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
-        error: 'Failed to fetch orders',
-        message: error instanceof Error ? error.message : 'Unknown error occurred'
-      }, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+    return this.orderService.findAll();
   }
 
   @Get('my-orders')
