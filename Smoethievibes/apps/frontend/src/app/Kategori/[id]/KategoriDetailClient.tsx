@@ -4,8 +4,39 @@ import React, { useEffect, useState } from 'react';
 import { GET_ALL_PRODUCTS, GET_PRODUCTS_BY_CATEGORY_SLUG } from '@/lib/graphql/queries';
 import client from '@/lib/apollo-client';
 // Query configurations removed - using default cache-first policy
-import ProductCard from '../ProductCard';
-import { getImageUrl as getProductImageUrl } from '../utils';
+// import ProductCard from '../ProductCard';
+// import { getImageUrl as getProductImageUrl } from '../utils';
+
+// Temporary ProductCard component since the original doesn't exist
+const ProductCard = ({ product }: { product: ProductCardProduct }) => {
+  return (
+    <div className="bg-white rounded-xl shadow-xl overflow-hidden hover:shadow-2xl hover:scale-[1.03] transition-all duration-300 cursor-pointer">
+      <div className="h-56 w-full relative">
+        <img
+          src={product.image || 'https://res.cloudinary.com/dogx3ps3r/image/upload/v1765320860/default_product.png'}
+          alt={product.name}
+          className="object-cover w-full h-full"
+        />
+      </div>
+      <div className="p-5">
+        <h3 className="font-bold text-xl text-gray-900 leading-tight">
+          {product.name}
+        </h3>
+        <p className="text-sm text-green-600 font-medium capitalize">
+          {product.category?.name || 'Default'}
+        </p>
+        <p className="text-2xl font-extrabold text-orange-500 mt-2">
+          Rp {product.price.toLocaleString('id-ID')}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// Temporary utils function
+const getProductImageUrl = (image?: string) => {
+  return image || 'https://res.cloudinary.com/dogx3ps3r/image/upload/v1765320860/default_product.png';
+};
 
 interface ProductCardProduct {
   id: string;

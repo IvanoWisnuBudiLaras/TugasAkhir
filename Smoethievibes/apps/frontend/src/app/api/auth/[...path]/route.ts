@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path?: string[] } }
+  { params }: { params: Promise<{ path?: string[] }> }
 ) {
-  const path = params.path ? params.path.join('/') : '';
+  const { path: pathArray } = await params;
+  const path = pathArray ? pathArray.join('/') : '';
   const backendUrl = path ? `http://localhost:3001/auth/${path}` : 'http://localhost:3001/auth';
   
   // Forward the request to backend
@@ -35,9 +36,10 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { path?: string[] } }
+  { params }: { params: Promise<{ path?: string[] }> }
 ) {
-  const path = params.path ? params.path.join('/') : '';
+  const { path: pathArray } = await params;
+  const path = pathArray ? pathArray.join('/') : '';
   const backendUrl = path ? `http://localhost:3001/auth/${path}` : 'http://localhost:3001/auth';
   
   try {
@@ -65,9 +67,10 @@ export async function POST(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { path?: string[] } }
+  { params }: { params: Promise<{ path?: string[] }> }
 ) {
-  const path = params.path ? params.path.join('/') : '';
+  const { path: pathArray } = await params;
+  const path = pathArray ? pathArray.join('/') : '';
   const backendUrl = path ? `http://localhost:3001/auth/${path}` : 'http://localhost:3001/auth';
   
   try {

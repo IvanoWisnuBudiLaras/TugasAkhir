@@ -7,6 +7,8 @@ import { useCart } from '@/app/Context/CartContext';
 
 export default function CartPage() {
     const { items: cartItems, removeItem, updateQuantity } = useCart();
+    const { isAuthenticated } = useAuth();
+    const router = useRouter();
     
     // State untuk notifikasi setelah checkout (mengganti alert)
     const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
