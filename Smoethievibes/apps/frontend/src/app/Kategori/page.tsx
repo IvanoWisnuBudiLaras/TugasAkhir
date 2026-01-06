@@ -1,9 +1,10 @@
 // app/Kategori/page.tsx
 // URL: /Kategori
 
-import ProductList from './ProductList';
+import MenuPage from './[id]/page'; 
 
-// Halaman ini menampilkan semua menu/produk
+// Halaman ini bertindak sebagai halaman utama yang menampilkan SEMUA MENU
+// dengan cara memanggil komponen dinamis Page (MenuPage) dengan id='semua'.
 export default function CategoryRootPage() {
-  return <ProductList />;
+  return <MenuPage params={{ id: 'semua' }} />;
 }

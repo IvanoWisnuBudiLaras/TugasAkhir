@@ -1,7 +1,7 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
 import { IsNotEmpty, IsString, IsNumber, IsOptional, IsEnum, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { OrderType } from '@prisma/client';
+import { OrderType } from '../../../common/enums';
 import { OrderItemInput } from './order-item.input';
 
 @InputType()

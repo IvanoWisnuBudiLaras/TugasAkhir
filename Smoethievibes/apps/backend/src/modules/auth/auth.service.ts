@@ -17,7 +17,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
-    @Inject('EMAIL_SERVICE') private emailService: EmailServiceType,
+    @Inject('EMAIL_SERVICE') private emailService: any,
   ) { }
 
   private get messages() {
@@ -92,9 +92,9 @@ export class AuthService {
       action = 'REGISTER';
     }
 
-    // Delete old OTPs for this email
-    await (this.prisma as any).otp.deleteMany({
-      where: { email: sanitizedEmail }
+    // Hapus OTP lama untuk email ini
+    await (this.prisma as any).oTP.deleteMany({
+      where: { email }
     });
 
     const code = ValidationUtil.generateOTP(6);
@@ -184,8 +184,8 @@ export class AuthService {
       throw new BadRequestException(this.messages.errors.userNotFound);
     }
 
-    // Verify OTP from OTP table
-    const otpRow = await this.prisma.otp.findFirst({ 
+    // Verify OTP
+    const otpRow = await (this.prisma as any).oTP.findFirst({ 
       where: { 
         email: sanitizedEmail, 
         code,
@@ -202,19 +202,8 @@ export class AuthService {
       throw new BadRequestException(this.messages.errors.otpExpired);
     }
 
-    // Mark OTP as used
-    await this.prisma.otp.update({
-      where: { id: otpRow.id },
-      data: { used: true }
-    });
-
-    // Activate user if inactive
-    if (!user.isActive) {
-      await this.prisma.user.update({ 
-        where: { id: user.id }, 
-        data: { isActive: true } 
-      });
-    }
+    // Consume OTP
+    await (this.prisma as any).oTP.deleteMany({ where: { email, code } });
 
     // Update last login
     await this.recordLastLogin(user.id);
@@ -258,25 +247,58 @@ export class AuthService {
     });
     
     if (!otpRow) {
-      throw new BadRequestException(this.messages.errors.invalidToken);
+      // Fallback to legacy user fields
+      const userFallback = await this.prisma.user.findUnique({ where: { email } });
+      if (!userFallback) throw new BadRequestException('User not found');
+      if (!userFallback.otpCode || !userFallback.otpExpiresAt) throw new BadRequestException('No OTP found. Please login again.');
+      if (userFallback.otpCode !== code) throw new BadRequestException('Invalid OTP');
+      if (new Date() > userFallback.otpExpiresAt) throw new BadRequestException('OTP expired');
+      
+      // Aktifkan user dan bersihkan OTP
+      await this.prisma.user.update({ 
+        where: { id: userFallback.id }, 
+        data: { 
+          otpCode: null, 
+          otpExpiresAt: null, 
+          isActive: true,
+          lastLogin: new Date()
+        } 
+      });
+      
+      const payload = { 
+        sub: userFallback.id, 
+        email: userFallback.email, 
+        roles: userFallback.role || [], 
+        iss: this.configService.get('auth.token.issuer') || 'smoethievibes', 
+        aud: this.configService.get('auth.token.audience') || 'smoethievibes-users' 
+      };
+      
+      const accessToken = this.jwtService.sign(payload);
+      const { password, ...result } = userFallback;
+      return { access_token: accessToken, user: result };
     }
 
     if (new Date() > otpRow.expiresAt) {
       throw new BadRequestException(this.messages.errors.otpExpired);
     }
 
-    // Mark OTP as used
-    await this.prisma.otp.update({
-      where: { id: otpRow.id },
-      data: { used: true }
-    });
+    // Consume OTP(s)
+    await (this.prisma as any).oTP.deleteMany({ where: { email, code } });
 
     // Find user and mark active
     const user = await this.prisma.user.findUnique({ where: { email: sanitizedEmail } });
     if (!user) throw new BadRequestException(this.messages.errors.userNotFound);
     
-    // Activate user and update last login
-    await this.recordLastLogin(user.id);
+    // Aktifkan user dan update last login
+    await this.prisma.user.update({ 
+      where: { id: user.id }, 
+      data: { 
+        isActive: true, 
+        otpCode: null, 
+        otpExpiresAt: null,
+        lastLogin: new Date()
+      } 
+    });
 
     const payload = { 
       sub: user.id, 
@@ -376,13 +398,11 @@ export class AuthService {
       const otp = crypto.randomInt(100000, 999999).toString();
       const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-      // Create OTP record in Otp table
-      await this.prisma.otp.create({
+      await this.prisma.user.update({
+        where: { id: user.id },
         data: {
-          email: user.email,
-          code: otp,
-          expiresAt: otpExpiresAt,
-          action: 'REGISTER'
+          otpCode: otp,
+          otpExpiresAt: otpExpiresAt,
         },
       });
 
