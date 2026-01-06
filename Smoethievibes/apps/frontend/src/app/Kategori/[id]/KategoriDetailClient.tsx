@@ -1,39 +1,41 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import ProductCard from '../ProductCard';
-import { getImageUrl as getProductImageUrl } from '../utils';
+import { GET_ALL_PRODUCTS, GET_PRODUCTS_BY_CATEGORY_SLUG } from '@/lib/graphql/queries';
+import client from '@/lib/apollo-client';
+// Query configurations removed - using default cache-first policy
+// import ProductCard from '../ProductCard';
+// import { getImageUrl as getProductImageUrl } from '../utils';
 
-interface ApiProduct {
-  id?: string;
-  _id?: string;
-  name?: string;
-  slug?: string;
-  description?: string;
-  price?: number;
-  image?: string;
-  images?: string[];
-  stock?: number;
-  categoryId?: string;
-  category?: {
-    id?: string;
-    name?: string;
-    slug?: string;
-  };
-  isActive?: boolean;
-  isFeatured?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-// Type guard function untuk memastikan data produk valid
-const isValidApiProduct = (item: unknown): item is ApiProduct => {
+// Temporary ProductCard component since the original doesn't exist
+const ProductCard = ({ product }: { product: ProductCardProduct }) => {
   return (
-    typeof item === 'object' &&
-    item !== null &&
-    ('id' in item || '_id' in item) &&
-    'name' in item
+    <div className="bg-white rounded-xl shadow-xl overflow-hidden hover:shadow-2xl hover:scale-[1.03] transition-all duration-300 cursor-pointer">
+      <div className="h-56 w-full relative">
+        <img
+          src={product.image || 'https://res.cloudinary.com/dogx3ps3r/image/upload/v1765320860/default_product.png'}
+          alt={product.name}
+          className="object-cover w-full h-full"
+        />
+      </div>
+      <div className="p-5">
+        <h3 className="font-bold text-xl text-gray-900 leading-tight">
+          {product.name}
+        </h3>
+        <p className="text-sm text-green-600 font-medium capitalize">
+          {product.category?.name || 'Default'}
+        </p>
+        <p className="text-2xl font-extrabold text-orange-500 mt-2">
+          Rp {product.price.toLocaleString('id-ID')}
+        </p>
+      </div>
+    </div>
   );
+};
+
+// Temporary utils function
+const getProductImageUrl = (image?: string) => {
+  return image || 'https://res.cloudinary.com/dogx3ps3r/image/upload/v1765320860/default_product.png';
 };
 
 interface ProductCardProduct {
@@ -54,14 +56,27 @@ interface ProductCardProduct {
     id: string;
     name: string;
     slug: string;
+    image?: string;
   };
 }
+
+// Interface untuk data produk dari API yang mungkin memiliki field tambahan
+interface ApiProduct extends Omit<ProductCardProduct, 'category'> {
+  category?: {
+    id: string;
+    name: string;
+    slug: string;
+    image?: string;
+  };
+  categoryName?: string; // Field tambahan dari analytics queries
+  categorySlug?: string; // Field tambahan dari analytics queries
+}
+
+// Tipe Product sudah diimpor dari types.ts
 
 interface KategoriDetailClientProps {
   categoryId: string;
 }
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function KategoriDetailClient({ categoryId }: KategoriDetailClientProps) {
   const [products, setProducts] = useState<ProductCardProduct[]>([]);
@@ -80,109 +95,9 @@ export default function KategoriDetailClient({ categoryId }: KategoriDetailClien
     const fetchProducts = async () => {
       try {
         setError(null);
-        setLoading(true);
+        let data;
         
-        let data: ProductCardProduct[] = [];
-        
-        if (categoryId === 'semua') {
-          // Ambil semua produk
-          const response = await fetch(`${API_URL}/products`);
-          if (!response.ok) throw new Error('Gagal memuat produk');
-          
-          const productsData = await response.json();
-          // Validasi dan transformasi data
-          const validatedProducts = Array.isArray(productsData) ? productsData.filter(isValidApiProduct) : [];
-          data = validatedProducts.map((product) => {
-            // Pastikan category.id selalu ada
-            const categoryId = product.category?.id || product.categoryId || '1';
-            const categoryName = product.category?.name || 'Default';
-            const categorySlug = product.category?.slug || 'default';
-            return {
-              id: product.id || product._id || '',
-              name: product.name || '',
-              slug: product.slug || (product.name || '').toLowerCase().replace(/\s+/g, '-'),
-              description: product.description,
-              price: product.price || 0,
-              image: product.image || product.images?.[0],
-              images: product.images,
-              stock: product.stock || 0,
-              categoryId: categoryId,
-              isActive: product.isActive ?? true,
-              isFeatured: product.isFeatured,
-              createdAt: product.createdAt,
-              updatedAt: product.updatedAt,
-              category: {
-                id: categoryId,
-                name: categoryName,
-                slug: categorySlug
-              }
-            };
-          });
-        } else {
-          // Ambil produk berdasarkan kategori slug
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-          
-          const response = await fetch(`${API_URL}/products/category/${categoryId}`, {
-            signal: controller.signal,
-            headers: {
-              'Content-Type': 'application/json',
-            }
-          });
-          
-          clearTimeout(timeoutId);
-          
-          if (!response.ok) throw new Error('Gagal memuat produk untuk kategori ini');
-          
-          const productsData = await response.json();
-          // Validasi dan transformasi data
-          const validatedProducts = Array.isArray(productsData) ? productsData.filter(isValidApiProduct) : [];
-          data = validatedProducts.map((product) => {
-            // Pastikan category.id selalu ada
-            const categoryId = product.category?.id || product.categoryId || '1';
-            const categoryName = product.category?.name || 'Default';
-            const categorySlug = product.category?.slug || 'default';
-            return {
-              id: product.id || product._id || '',
-              name: product.name || '',
-              slug: product.slug || (product.name || '').toLowerCase().replace(/\s+/g, '-'),
-              description: product.description,
-              price: product.price || 0,
-              image: product.image || product.images?.[0],
-              images: product.images,
-              stock: product.stock || 0,
-              categoryId: categoryId,
-              isActive: product.isActive ?? true,
-              isFeatured: product.isFeatured,
-              createdAt: product.createdAt,
-              updatedAt: product.updatedAt,
-              category: {
-                id: categoryId,
-                name: categoryName,
-                slug: categorySlug
-              }
-            };
-          });
-        }
-        
-        setProducts(data);
-      } catch (error) {
-        console.error('Error fetching products:', error);
-        let errorMessage = 'Gagal memuat produk. Silakan coba lagi.';
-        
-        if (error instanceof Error) {
-          if (error.name === 'AbortError') {
-            errorMessage = 'Koneksi timeout. Server mungkin sedang sibuk.';
-          } else if (error.message.includes('Failed to fetch')) {
-            errorMessage = 'Gagal terhubung ke server. Periksa koneksi internet Anda.';
-          } else {
-            errorMessage = error.message;
-          }
-        }
-        
-        setError(errorMessage);
-        
-        // Fallback data
+        // Data sementara sebagai fallback
         const fallbackProducts: ProductCardProduct[] = [
           {
             id: '1',
@@ -231,19 +146,79 @@ export default function KategoriDetailClient({ categoryId }: KategoriDetailClien
           }
         ];
         
-        // Filter berdasarkan kategori jika bukan 'semua'
-        if (categoryId !== 'semua') {
-          const filteredProducts = fallbackProducts.filter(product => 
-            product.category && (
-              product.category.slug === categoryId || 
-              product.category.name.toLowerCase().includes(categoryId) ||
-              categoryId.includes(product.category.name.toLowerCase())
-            )
-          );
-          setProducts(filteredProducts.length > 0 ? filteredProducts : fallbackProducts);
+        if (categoryId === 'semua') {
+          try {
+            const result = await client.query({
+              query: GET_ALL_PRODUCTS,
+              variables: { skip: 0, take: 100 },
+              // Use cache-first for product listings (default policy)
+            });
+            data = result.data.products.map((apiProduct: ApiProduct): ProductCardProduct => ({
+              ...apiProduct,
+              stock: apiProduct.stock ?? 0,
+              categoryId: apiProduct.categoryId || apiProduct.category?.id || '1',
+              category: apiProduct.category || {
+                id: apiProduct.categoryId || '1',
+                name: apiProduct.categoryName || 'Default',
+                slug: apiProduct.categorySlug || 'default'
+              }
+            }));
+            console.log('All products from API:', data);
+          } catch (error) {
+            console.warn('API error for all products, using fallback', error);
+            data = fallbackProducts;
+          }
         } else {
-          setProducts(fallbackProducts);
+          // Gunakan query baru berdasarkan slug kategori
+          try {
+            const result = await client.query({
+              query: GET_PRODUCTS_BY_CATEGORY_SLUG,
+              variables: { categorySlug: categoryId },
+              // Use cache-first for product listings (default policy)
+            });
+            data = result.data.productsByCategorySlug.map((apiProduct: ApiProduct): ProductCardProduct => ({
+              ...apiProduct,
+              stock: apiProduct.stock ?? 0,
+              categoryId: apiProduct.categoryId || apiProduct.category?.id || '1',
+              category: apiProduct.category || {
+                id: apiProduct.categoryId || '1',
+                name: apiProduct.categoryName || 'Default',
+                slug: apiProduct.categorySlug || 'default'
+              }
+            }));
+            console.log(`Products for category ${categoryId} from API:`, data);
+            
+            // Jika tidak ada produk untuk kategori tertentu, filter dari fallback
+            if (!data || data.length === 0) {
+              const categoryProducts = fallbackProducts.filter(product => 
+                product.category && (
+                  product.category.slug === categoryId || 
+                  product.category.name.toLowerCase().includes(categoryId) ||
+                  categoryId.includes(product.category.name.toLowerCase())
+                )
+              );
+              data = categoryProducts.length > 0 ? categoryProducts : fallbackProducts;
+              console.log('Using filtered fallback products:', data);
+            }
+          } catch (error) {
+            console.warn('API error for category products, using fallback', error);
+            // Filter fallback data berdasarkan kategori
+            const categoryProducts = fallbackProducts.filter(product => 
+              product.category && (
+                product.category.slug === categoryId || 
+                product.category.name.toLowerCase().includes(categoryId) ||
+                categoryId.includes(product.category.name.toLowerCase())
+              )
+            );
+            data = categoryProducts.length > 0 ? categoryProducts : fallbackProducts;
+            console.log('Using fallback products:', data);
+          }
         }
+        
+        setProducts(data || []);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        setError('Gagal memuat produk. Silakan coba lagi.');
       } finally {
         setLoading(false);
       }
@@ -253,10 +228,7 @@ export default function KategoriDetailClient({ categoryId }: KategoriDetailClien
   }, [categoryId]);
 
   // Gunakan utility function untuk produk
-  const getImageUrl = (imagePath: string | undefined) => {
-    if (!imagePath) return '/placeholder-image.jpg';
-    return getProductImageUrl(imagePath);
-  };
+  const getImageUrl = getProductImageUrl;
     
   if (error) {
     return (

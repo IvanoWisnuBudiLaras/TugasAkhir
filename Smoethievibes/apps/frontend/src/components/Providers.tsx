@@ -59,9 +59,9 @@ function TopProgress() {
 // @komponen Provider root untuk Apollo GraphQL dan Cart state management
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <AuthProvider>
-      {/* CartProvider membutuhkan AuthContext, jadi harus di dalam AuthProvider */}
-      <CartProvider>
+    <CartProvider>
+      {/* @fitur Auth provider untuk authentication state */}
+      <AuthProvider>
         {/* @fitur GraphQL client provider untuk query/mutation */}
         <ApolloProvider client={client}>
           <TopProgress />
@@ -69,7 +69,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           {children}
           <Footer />
         </ApolloProvider>
-      </CartProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </CartProvider>
   );
 }

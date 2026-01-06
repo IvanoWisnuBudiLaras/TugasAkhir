@@ -2,7 +2,6 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
-import { useAuth } from '@/lib/context/AuthContext';
 
 // Tipe data untuk item keranjang
 interface CartItem {
@@ -27,15 +26,8 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-    const { isAuthenticated } = useAuth();
+    // Gunakan state yang sama dari halaman Keranjang Anda
     const [items, setItems] = useState<CartItem[]>([]); 
-
-    // Kosongkan cart jika user logout
-    useEffect(() => {
-        if (!isAuthenticated) {
-            setItems([]);
-        }
-    }, [isAuthenticated]);
 
     // Log items to console whenever they change
     useEffect(() => {
@@ -49,12 +41,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     // Fungsi untuk menambah item
     const addItem = (newItem: CartItem) => {
-        // Hanya izinkan tambah item jika user sudah login
-        if (!isAuthenticated) {
-            console.warn('User belum login. Silakan login terlebih dahulu.');
-            return;
-        }
-
         if (newItem.stock <= 0) {
             // Optional: Tampilkan notifikasi bahwa stok habis
             console.warn(`Stok untuk ${newItem.name} habis.`);
@@ -80,12 +66,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     // Fungsi untuk update quantity
     const updateQuantity = (id: number, delta: number) => {
-        // Hanya izinkan update jika user sudah login
-        if (!isAuthenticated) {
-            console.warn('User belum login. Silakan login terlebih dahulu.');
-            return;
-        }
-
         setItems(prevItems => 
             prevItems.map(item => {
                 if (item.id === id) {
@@ -99,12 +79,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const removeItem = (id: number) => {
-        // Hanya izinkan remove jika user sudah login
-        if (!isAuthenticated) {
-            console.warn('User belum login. Silakan login terlebih dahulu.');
-            return;
-        }
-
         setItems(prevItems => prevItems.filter(item => item.id !== id));
     };
 

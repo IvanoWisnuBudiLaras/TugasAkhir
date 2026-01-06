@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Edit, Trash2, RefreshCw } from "lucide-react";
+import { Plus, Edit, Trash2 } from "lucide-react";
 import AddCategoryModal from "@/components/admin/AddCategoryModal";
 import EditCategoryModal from "@/components/admin/EditCategoryModal";
 
@@ -11,96 +11,94 @@ interface Category {
   name: string;
   description?: string;
   createdAt?: string | null;
-  isActive?: boolean;
-  sortOrder?: number;
-}
-
-interface ApiCategory {
-  id?: string;
-  _id?: string;
-  name?: string;
-  description?: string;
-  createdAt?: string;
-  created_at?: string;
-  isActive?: boolean;
-  sortOrder?: number;
 }
 
 export default function CategoriesPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
   const fetchCategories = useCallback(async () => {
     const token = localStorage.getItem("token");
     if (!token) {
-      setError("Token tidak ditemukan. Silakan login ulang.");
       router.push("/Auth");
       return;
     }
 
     try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await fetch(`${API_URL}/categories`, {
+      const response = await fetch('/api/categories', {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
 
-      if (response.status === 401) {
-        setError("Sesi telah berakhir. Silakan login ulang.");
+      if (response.ok) {
+        const text = await response.text();
+        if (!text) {
+          console.warn("Empty response received");
+          setCategories([]);
+          return;
+        }
+        try {
+          const data = JSON.parse(text);
+          // Validasi struktur data kategori
+          if (Array.isArray(data)) {
+            const validCategories = data.map((cat: unknown) => {
+              const category = cat as Record<string, unknown>;
+              return {
+                id: (category.id || category._id || '') as string,
+                name: (category.name || 'Unnamed Category') as string,
+                description: (category.description || '') as string,
+                createdAt: (category.createdAt || category.created_at || null) as string | null
+              };
+            }).filter((cat) => cat.id && cat.name);
+            setCategories(validCategories);
+          } else {
+            console.warn("Invalid data format: expected array");
+            setCategories([]);
+          }
+        } catch (parseError) {
+          console.error("Failed to parse JSON response:", text);
+          console.error("Parse error details:", parseError);
+          setCategories([]);
+        }
+      } else if (response.status === 403) {
+        console.error("Access denied: Insufficient permissions to view categories");
+        router.push("/unauthorized");
+      } else if (response.status === 401) {
+        console.error("Authentication required: Token may be expired");
         localStorage.removeItem("token");
         router.push("/Auth");
-        return;
+      } else {
+        console.error(`Failed to fetch categories: HTTP ${response.status} - ${response.statusText}`);
+        let errorData = { message: 'Unknown error' };
+        let errorText = '';
+        try {
+          errorText = await response.text();
+          if (errorText) {
+            errorData = JSON.parse(errorText);
+          }
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+          errorData = { message: errorText || 'Failed to fetch categories' };
+        }
+        console.error('Error details:', errorData);
+        setCategories([]);
       }
-
-      if (response.status === 403) {
-        setError("Anda tidak memiliki izin untuk mengakses halaman ini.");
-        router.push("/unauthorized");
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      // Validasi data yang diterima
-      if (!Array.isArray(data)) {
-        throw new Error("Format data tidak valid");
-      }
-      
-      // Validasi struktur data kategori
-      const validCategories = data.map((cat: ApiCategory) => ({
-        id: cat.id || cat._id || '',
-        name: cat.name || 'Unnamed Category',
-        description: cat.description || '',
-        createdAt: cat.createdAt || cat.created_at || null,
-        isActive: cat.isActive ?? true,
-        sortOrder: cat.sortOrder || 0,
-      })).filter((cat) => cat.id && cat.name);
-      
-      setCategories(validCategories);
     } catch (error) {
-      console.error("Error fetching categories:", error);
-      setError("Gagal memuat kategori. Silakan coba lagi.");
-      
-      // Fallback: set kategori kosong jika error
+      console.error("Network error fetching categories:", error);
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.error("Possible CORS or network connectivity issue");
+      }
       setCategories([]);
     } finally {
       setLoading(false);
     }
-  }, [router, API_URL]);
+  }, [router]);
 
   useEffect(() => {
     fetchCategories();
@@ -120,37 +118,24 @@ export default function CategoriesPage() {
   };
 
   const handleDelete = async (categoryId: string) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus kategori ini?")) {
+    if (!confirm("Are you sure you want to delete this category?")) {
       return;
     }
 
     const token = localStorage.getItem("token");
-    if (!token) {
-      alert("Token tidak ditemukan. Silakan login ulang.");
-      router.push("/Auth");
-      return;
-    }
-
     try {
-      const response = await fetch(`${API_URL}/categories/${categoryId}`, {
+      const response = await fetch(`/api/categories/${categoryId}`, {
         method: "DELETE",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
 
       if (response.ok) {
-        alert("Kategori berhasil dihapus!");
+        alert("Category deleted successfully!");
         fetchCategories();
-      } else if (response.status === 403) {
-        alert("Anda tidak memiliki izin untuk menghapus kategori ini.");
-      } else if (response.status === 401) {
-        alert("Sesi telah berakhir. Silakan login ulang.");
-        localStorage.removeItem("token");
-        router.push("/Auth");
       } else {
-        let errorMessage = "Gagal menghapus kategori";
+        let errorMessage = "Failed to delete category";
         try {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
@@ -162,69 +147,27 @@ export default function CategoriesPage() {
       }
     } catch (error) {
       console.error("Error deleting category:", error);
-      alert("Terjadi kesalahan jaringan. Silakan coba lagi.");
+      alert("Network error. Please try again.");
     }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <h2 className="text-3xl font-semibold tracking-tight">Kategori</h2>
-          <button
-            onClick={fetchCategories}
-            disabled={loading}
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Refresh data"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
+        <h2 className="text-3xl font-semibold tracking-tight">Categories</h2>
         <button
           onClick={() => setIsAddModalOpen(true)}
           className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Tambah Kategori
+          Add Category
         </button>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <div className="text-red-800">
-              <p className="font-medium">Terjadi kesalahan</p>
-              <p className="text-sm">{error}</p>
-            </div>
-            <button
-              onClick={fetchCategories}
-              className="ml-auto text-red-600 hover:text-red-800 text-sm font-medium"
-            >
-              Coba Lagi
-            </button>
-          </div>
-        </div>
-      )}
-
       {loading ? (
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
-            <p className="text-gray-500">Memuat kategori...</p>
-          </div>
-        </div>
+        <p className="text-gray-500">Loading categories...</p>
       ) : categories.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="p-8 text-center">
-            <p className="text-gray-500 mb-4">Belum ada kategori yang tersedia.</p>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="text-green-600 hover:text-green-800 font-medium"
-            >
-              Tambah kategori pertama
-            </button>
-          </div>
-        </div>
+        <p className="text-gray-500">No categories found.</p>
       ) : (
         <div className="bg-white rounded-lg shadow-sm border">
           <div className="overflow-x-auto">
@@ -232,19 +175,16 @@ export default function CategoriesPage() {
               <thead className="bg-gray-50 border-b">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nama
+                    Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Deskripsi
+                    Description
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tanggal Dibuat
+                    Created At
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Aksi
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -265,17 +205,8 @@ export default function CategoriesPage() {
                       <div className="text-sm text-gray-500">
                         {category.createdAt 
                           ? new Date(category.createdAt).toLocaleDateString()
-                          : "Tidak tersedia"}
+                          : "Not available"}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        category.isActive 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {category.isActive ? 'Aktif' : 'Tidak Aktif'}
-                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
@@ -284,14 +215,14 @@ export default function CategoriesPage() {
                           className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
                         >
                           <Edit className="w-4 h-4 mr-1" />
-                          Ubah
+                          Edit
                         </button>
                         <button
                           onClick={() => handleDelete(category.id)}
                           className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center"
                         >
                           <Trash2 className="w-4 h-4 mr-1" />
-                          Hapus
+                          Delete
                         </button>
                       </div>
                     </td>
