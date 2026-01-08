@@ -38,19 +38,51 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  // Get token from localStorage
+  const getToken = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('access_token');
+    }
+    return null;
+  };
+
+  // Set token in localStorage
+  const setToken = (token: string | null) => {
+    if (typeof window !== 'undefined') {
+      if (token) {
+        localStorage.setItem('access_token', token);
+      } else {
+        localStorage.removeItem('access_token');
+      }
+    }
+  };
+
   useEffect(() => {
     checkAuthStatus();
   }, []);
 
   const checkAuthStatus = async () => {
+    // 1. Cek apakah ada token sebelum panggil API
+    const token = getToken();
+    if (!token) {
+      setAuthLoading(false);
+      setUser(null);
+      return; // Berhenti di sini jika tidak ada token
+    }
+
     try {
       setAuthLoading(true);
       const response = await authAPI.getMe();
-      if (response.data) {
-        setUser(response.data);
+      
+      // Sesuaikan dengan struktur return dari backend Anda
+      // Jika backend me-return { data: { user } } gunakan response.data
+      if (response) {
+        setUser(response.data || response); 
       }
     } catch (error) {
-      console.error("Error checking auth status:", error);
+      // Jika error 401, bersihkan token yang tidak valid
+      console.warn("Session expired or invalid token");
+      setToken(null);
       setUser(null);
     } finally {
       setAuthLoading(false);
@@ -62,6 +94,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authAPI.login(email, password);
       if (response.data) {
         setUser(response.data.user);
+        setToken(response.data.access_token);
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -79,6 +112,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authAPI.register(email, password, name);
       if (response.data) {
         setUser(response.data.user);
+        setToken(response.data.access_token);
       }
     } catch (error) {
       console.error("Register error:", error);
@@ -98,6 +132,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error("Logout error:", error);
     } finally {
       setUser(null);
+      setToken(null);
     }
   };
 
@@ -106,6 +141,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authAPI.verifyOtp(email, otp);
       if (response.data) {
         setUser(response.data.user);
+        setToken(response.data.access_token);
       }
     } catch (error) {
       console.error("OTP verification error:", error);

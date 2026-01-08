@@ -1,4 +1,10 @@
 export const authAPI = {
+  // 1. Tambahkan return type Record<string, string> di sini
+  getAuthHeaders: (): Record<string, string> => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  },
+
   login: async (email: string, password: string) => {
     const response = await fetch("/api/auth/login", {
       method: "POST",
@@ -38,6 +44,7 @@ export const authAPI = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...authAPI.getAuthHeaders(), // Sekarang TypeScript akan mengenali ini dengan benar
       },
     });
 
@@ -49,15 +56,27 @@ export const authAPI = {
   },
 
   getMe: async () => {
+    const headers = authAPI.getAuthHeaders();
+    
+    // Jika tidak ada header Authorization, jangan tembak API untuk menghemat traffic
+    if (!headers.Authorization) {
+       return null; 
+    }
+
     const response = await fetch("/api/auth/me", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        ...headers,
       },
     });
 
+    if (response.status === 401) {
+      return null; // Kembalikan null daripada Error jika hanya masalah auth
+    }
+
     if (!response.ok) {
-      throw new Error("Not authenticated");
+      throw new Error("Failed to fetch user data");
     }
 
     return response.json();
