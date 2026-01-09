@@ -51,7 +51,9 @@ async function bootstrap() {
         // Allow external styles over HTTPS and inline styles (required by some dev UIs)
         styleSrc: ["'self'", "'unsafe-inline'", 'https:'],
         // In development allow CDN scripts and inline execution for Playground only.
-        scriptSrc: isProd ? ["'self'"] : ["'self'", "'unsafe-inline'", 'https:'],
+        // In development we may need to allow 'unsafe-eval' for dev tool builds
+        // (Webpack/dev server uses eval-based source maps). DO NOT enable in production.
+        scriptSrc: isProd ? ["'self'"] : ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https:'],
         // Images from data URIs and HTTPS are allowed
         imgSrc: ["'self'", "data:", "https:"],
       },

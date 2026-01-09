@@ -23,7 +23,6 @@ const fallbackMenuRekomendasi: Product[] = [
     { id: 1, name: "Avocado Salad", kategori: "makanan", price: 25000, img: "https://res.cloudinary.com/dogx3ps3r/image/upload/v1765320860/avocado_salad.png", rating: 4.8, stock: 10 },
     { id: 2, name: "Cocoa Peanut Butter", kategori: "smoothie", price: 30000, img: "https://res.cloudinary.com/dogx3ps3r/image/upload/v1765320861/Cocoa_Peanut_Butter.jpg", rating: 4.7, stock: 15 },
     { id: 3, name: "Crispy Chicken UP", kategori: "makanan", price: 28000, img: "https://res.cloudinary.com/dogx3ps3r/image/upload/v1765321380/Roasted_Chiken_UP_roasted_potato.png", rating: 4.9, stock: 12 },
->>>>>>>>> Temporary merge branch 2
 ];
 
 export function Rekomendasi() {
