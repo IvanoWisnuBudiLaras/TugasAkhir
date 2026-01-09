@@ -8,6 +8,7 @@ interface User {
   email: string;
   name: string;
   role: string;
+  avatar?: string;
 }
 
 interface AuthContextType {
@@ -18,6 +19,7 @@ interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   verifyOtp: (email: string, otp: string) => Promise<void>;
+  checkAuthStatus: () => Promise<void>; // Menambahkan fungsi ini ke interface
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,7 +40,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // Get token from localStorage
   const getToken = () => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('access_token');
@@ -46,7 +47,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return null;
   };
 
-  // Set token in localStorage
   const setToken = (token: string | null) => {
     if (typeof window !== 'undefined') {
       if (token) {
@@ -62,25 +62,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const checkAuthStatus = async () => {
-    // 1. Cek apakah ada token sebelum panggil API
     const token = getToken();
     if (!token) {
       setAuthLoading(false);
       setUser(null);
-      return; // Berhenti di sini jika tidak ada token
+      return;
     }
 
     try {
       setAuthLoading(true);
       const response = await authAPI.getMe();
-      
-      // Sesuaikan dengan struktur return dari backend Anda
-      // Jika backend me-return { data: { user } } gunakan response.data
       if (response) {
         setUser(response.data || response); 
       }
     } catch (error) {
-      // Jika error 401, bersihkan token yang tidak valid
       console.warn("Session expired or invalid token");
       setToken(null);
       setUser(null);
@@ -97,13 +92,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setToken(response.data.access_token);
       }
     } catch (error) {
-      console.error("Login error:", error);
-      // Ensure the error is thrown with the correct message for OTP detection
-      if (error instanceof Error) {
-        throw error;
-      } else {
-        throw new Error("Login failed");
-      }
+      if (error instanceof Error) throw error;
+      throw new Error("Login failed");
     }
   };
 
@@ -115,13 +105,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setToken(response.data.access_token);
       }
     } catch (error) {
-      console.error("Register error:", error);
-      // Ensure the error is thrown with the correct message for OTP detection
-      if (error instanceof Error) {
-        throw error;
-      } else {
-        throw new Error("Registration failed");
-      }
+      if (error instanceof Error) throw error;
+      throw new Error("Registration failed");
     }
   };
 
@@ -144,13 +129,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setToken(response.data.access_token);
       }
     } catch (error) {
-      console.error("OTP verification error:", error);
-      // Ensure the error is thrown with the correct message
-      if (error instanceof Error) {
-        throw error;
-      } else {
-        throw new Error("OTP verification failed");
-      }
+      if (error instanceof Error) throw error;
+      throw new Error("OTP verification failed");
     }
   };
 
@@ -162,6 +142,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     verifyOtp,
+    checkAuthStatus,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

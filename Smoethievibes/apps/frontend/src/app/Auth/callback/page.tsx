@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Notification from "@/components/ui/Notification";
 import { useNotification } from "@/hooks/useNotification";
+import { useAuth } from "@/lib/context/AuthContext"; // Sesuaikan path ini
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -12,8 +13,8 @@ export const dynamic = "force-dynamic";
 
 export default function CallbackPage() {
     const router = useRouter();
+    const { checkAuthStatus } = useAuth(); // Ambil fungsi trigger dari context
     const { notification, showNotification, hideNotification } = useNotification();
-    // We'll read the token from the URL on the client via window.location.search
 
     type User = {
         id?: string;
@@ -40,94 +41,85 @@ export default function CallbackPage() {
     useEffect(() => {
         const init = async () => {
             try {
-                // @keamanan Get token and error from URL search params or hash
                 const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
                 const urlToken = params.get('token');
                 const urlAccessToken = params.get('access_token');
                 const urlError = params.get('error');
                 const fromRegister = params.get('from') === 'register';
 
-                // Try to parse token from `data` param (some backends return JSON in a param)
                 let dataParamToken: string | null = null;
                 const dataParam = params.get('data');
                 if (dataParam) {
                     try {
                         const parsed = JSON.parse(dataParam);
                         dataParamToken = parsed?.access_token || parsed?.token || null;
-                    } catch {
-                        // ignore parse errors
-                    }
+                    } catch { /* ignore */ }
                 }
 
-                // Also check hash fragment (#token=...)
                 let hashToken: string | null = null;
                 if (typeof window !== 'undefined' && window.location.hash) {
                     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
                     hashToken = hashParams.get('token') || hashParams.get('access_token');
                 }
 
-                // @keamanan Handle Google OAuth errors
                 if (urlError) {
-                    showNotification({
-                        type: 'error',
-                        title: 'Login Error',
-                        message: decodeURIComponent(urlError),
-                        duration: 2500,
-                    });
-                    // Redirect to Auth page after showing error
+                    showNotification({ type: 'error', title: 'Login Error', message: decodeURIComponent(urlError), duration: 2500 });
                     setTimeout(() => router.push('/Auth'), 2000);
                     return;
                 }
 
-                const token = urlToken || urlAccessToken || dataParamToken || hashToken || localStorage.getItem("token");
+                // AMBIL TOKEN DARI URL/HASH
+                const token = urlToken || urlAccessToken || dataParamToken || hashToken;
+                
                 if (!token) {
-                    showNotification({ type: 'error', title: 'Auth failed', message: 'No token received from provider', duration: 2500 });
-                    setTimeout(() => router.push('/Auth'), 2000);
-                    return;
+                    // Cek jika sudah ada token lama, jika tidak ada baru error
+                    if (!localStorage.getItem("access_token")) {
+                        showNotification({ type: 'error', title: 'Auth failed', message: 'No token received', duration: 2500 });
+                        setTimeout(() => router.push('/Auth'), 2000);
+                        return;
+                    }
+                } else {
+                    // SIMPAN TOKEN KE LOCALSTORAGE (Gunakan access_token agar sinkron dengan Context)
+                    localStorage.setItem("access_token", token);
+                    
+                    // TRIGGER CONTEXT UNTUK UPDATE USER & NAVBAR
+                    await checkAuthStatus();
                 }
 
-                // Save token to localStorage for subsequent requests
-                localStorage.setItem("token", token);
+                const currentToken = localStorage.getItem("access_token");
 
-                // Call backend to get user info
+                // Ambil data user terbaru
                 const res = await fetch(`${API_URL}/auth/me`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
+                    headers: { Authorization: `Bearer ${currentToken}` },
                 });
 
                 if (!res.ok) {
-                    // Could be a brand new token or invalid — redirect to auth
                     router.push("/Auth");
                     return;
                 }
 
                 const data: User = await res.json();
 
-                // If user already has a name, go to profile
+                // Jika data sudah lengkap, langsung ke Profile
                 if (data?.name) {
-                    // Tampilkan pesan welcome untuk user baru dengan efek yang lebih menarik
-                if (fromRegister) {
-                    showNotification({
-                        type: 'success',
-                        title: '🎉 Welcome to Smoethie Vibes!',
-                        message: 'Your account has been successfully created. Let\'s get started! 🚀',
-                        duration: 6000
-                    });
-                }
+                    if (fromRegister) {
+                        showNotification({
+                            type: 'success',
+                            title: '🎉 Welcome!',
+                            message: 'Account successfully created. Let\'s get started!',
+                            duration: 4000
+                        });
+                    }
                     router.push("/Profile");
                     return;
                 }
 
-                // Prefill avatar from Google if exists
                 setAvatar(data?.avatar || "");
-                
-                // Tampilkan pesan untuk user baru dengan efek yang lebih menarik
                 if (fromRegister) {
                     showNotification({
                         type: 'info',
                         title: 'Complete Your Profile',
-                        message: 'Welcome! Let\'s make your profile awesome. Fill in your details below 🎯',
+                        message: 'Welcome! Let\'s fill in your details below 🎯',
                         duration: 6000
                     });
                 }
@@ -139,119 +131,20 @@ export default function CallbackPage() {
         };
 
         init();
-    }, [router, showNotification]);
+    }, [router, showNotification, checkAuthStatus]);
 
-    // Fungsi untuk sanitasi input
     const sanitizeInput = (input: string): string => {
-        return input
-            .replace(/[<>]/g, '') // Hapus karakter HTML
-            .replace(/["']/g, '') // Hapus kutipan
-            .replace(/javascript:/gi, '') // Hapus javascript protocol
-            .replace(/on\w+=/gi, '') // Hapus event handlers
-            .trim();
-    };
-
-    // Fungsi untuk validasi nama (OPTIONAL - tidak dipaksa)
-    const validateName = (name: string): { valid: boolean; message?: string } => {
-        if (name.trim().length === 0) {
-            return { valid: true }; // Nama boleh kosong (optional saat callback)
-        }
-        if (name.length < 2) {
-            return { valid: false, message: "Name must be at least 2 characters" };
-        }
-        if (name.length > 50) {
-            return { valid: false, message: "Name must be less than 50 characters" };
-        }
-        // Validasi karakter yang diizinkan (huruf, spasi, dan beberapa karakter khusus)
-        if (!/^[a-zA-Z\s\-\.']+$/.test(name)) {
-            return { valid: false, message: "Name can only contain letters, spaces, hyphens, dots, and apostrophes" };
-        }
-        return { valid: true };
-    };
-
-    // Fungsi untuk validasi nomor telepon
-    const validatePhone = (phone: string): { valid: boolean; message?: string } => {
-        if (!phone.trim()) return { valid: true }; // Optional
-        
-        // Hapus spasi dan karakter khusus
-        const cleanPhone = phone.replace(/[\s\-\(\)\.]/g, '');
-        
-        if (cleanPhone.length > 0 && !/^[\d\+\-]{7,15}$/.test(cleanPhone)) {
-            return { valid: false, message: "Invalid phone number format" };
-        }
-        return { valid: true };
-    };
-
-    // Fungsi untuk validasi URL avatar
-    const validateAvatarUrl = (url: string): { valid: boolean; message?: string } => {
-        if (!url.trim()) return { valid: true }; // Optional
-        
-        try {
-            const urlObj = new URL(url);
-            // Validasi protocol yang aman
-            if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
-                return { valid: false, message: "Avatar URL must use HTTP or HTTPS protocol" };
-            }
-            // Validasi ekstensi file yang diizinkan
-            const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
-            const hasValidExtension = allowedExtensions.some(ext => 
-                urlObj.pathname.toLowerCase().endsWith(ext)
-            );
-            if (!hasValidExtension) {
-                return { valid: false, message: "Avatar URL must be a valid image (jpg, jpeg, png, gif, webp)" };
-            }
-            return { valid: true };
-        } catch {
-            return { valid: false, message: "Invalid avatar URL format" };
-        }
+        return input.replace(/[<>]/g, '').replace(/["']/g, '').trim();
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
-        // Validasi nama (opsional, tapi kalau diisi harus valid)
-        const nameValidation = validateName(name);
-        if (!nameValidation.valid) {
-            showNotification({
-              type: 'error',
-              title: 'Invalid Name',
-              message: nameValidation.message || 'Please check your name',
-              duration: 3000
-            });
-            return;
-        }
-
-        // Validasi phone jika diisi
-        const phoneValidation = validatePhone(phone);
-        if (!phoneValidation.valid) {
-            showNotification({
-              type: 'error',
-              title: 'Invalid Phone',
-              message: phoneValidation.message || 'Please check your phone number',
-              duration: 3000
-            });
-            return;
-        }
-
-        // Validasi avatar jika diisi
-        const avatarValidation = validateAvatarUrl(avatar);
-        if (!avatarValidation.valid) {
-            showNotification({
-              type: 'error',
-              title: 'Invalid Avatar URL',
-              message: avatarValidation.message || 'Please check your avatar URL',
-              duration: 3000
-            });
-            return;
-        }
-
         setLoading(true);
 
         try {
-            const token = localStorage.getItem("token");
+            const token = localStorage.getItem("access_token");
             if (!token) throw new Error("No token available");
 
-            // Kirim data profile (name boleh null/kosong)
             const body: ProfileUpdate = {};
             if (name.trim()) body.name = sanitizeInput(name);
             if (phone) body.phone = sanitizeInput(phone);
@@ -267,21 +160,13 @@ export default function CallbackPage() {
                 body: JSON.stringify(body),
             });
 
-            const data = await res.json();
-            if (!res.ok) {
-                throw new Error(data.message || "Unable to complete profile");
-            }
+            if (!res.ok) throw new Error("Update failed");
 
-            // Navigate to profile after completion
+            // Update context sekali lagi agar nama user muncul di Navbar
+            await checkAuthStatus();
             router.push('/Profile');
-        } catch (error: unknown) {
-            console.error(error);
-            showNotification({
-                type: 'error',
-                title: 'Update Failed',
-                message: 'Something went wrong. Please try again.',
-                duration: 3000
-            });
+        } catch (error) {
+            showNotification({ type: 'error', title: 'Update Failed', message: 'Something went wrong.', duration: 3000 });
         } finally {
             setLoading(false);
         }
@@ -290,7 +175,7 @@ export default function CallbackPage() {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">Processing authentication...</div>
+                <div className="animate-pulse text-green-600 font-medium">Processing authentication...</div>
             </div>
         );
     }
@@ -298,81 +183,71 @@ export default function CallbackPage() {
     return (
         <>
             {notification && (
-                <Notification
-                    type={notification.type}
-                    title={notification.title}
-                    message={notification.message}
-                    duration={notification.duration}
-                    onClose={hideNotification}
-                    isClosing={notification.isClosing}
-                />
+                <Notification {...notification} onClose={hideNotification} />
             )}
             <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
-            <form onSubmit={handleSubmit} className="w-full max-w-md bg-white p-8 rounded-lg shadow">
-                <h2 className="text-2xl font-semibold mb-4">Complete your profile</h2>
+                <form onSubmit={handleSubmit} className="w-full max-w-md bg-white p-8 rounded-xl shadow-lg">
+                    <h2 className="text-2xl font-bold mb-2 text-gray-800">Complete your profile</h2>
+                    <p className="text-sm text-gray-500 mb-6">Just one more step to set up your account.</p>
 
-                <p className="text-sm text-gray-600 mb-4">
-                    We only need your name to finish setting up your account. You can add more details later.
-                </p>
-
-                <div className="mb-6 flex flex-col items-center gap-4">
-                    <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-200 relative">
-                        {avatar ? (
-                            <Image src={avatar} alt="avatar" width={96} height={96} className="w-full h-full object-cover" unoptimized={true} />
-                        ) : (
-                            <span className="text-gray-400 text-xs text-center px-2">No Avatar</span>
-                        )}
+                    <div className="mb-6 flex flex-col items-center gap-4">
+                        <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100 border-2 border-green-100 flex items-center justify-center relative">
+                            {avatar ? (
+                                <Image src={avatar} alt="avatar" fill className="object-cover" unoptimized />
+                            ) : (
+                                <span className="text-gray-400 text-xs">No Image</span>
+                            )}
+                        </div>
+                        <div className="w-full">
+                            <label className="block mb-1 text-xs font-semibold text-gray-600 uppercase">Avatar URL</label>
+                            <input
+                                value={avatar}
+                                onChange={(e) => setAvatar(e.target.value)}
+                                placeholder="https://..."
+                                className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-sm transition-all"
+                            />
+                        </div>
                     </div>
-                    <div className="w-full">
-                        <label className="block mb-2 text-sm font-medium text-gray-700">Avatar URL</label>
-                        <input
-                            value={avatar}
-                            onChange={(e) => setAvatar(e.target.value)}
-                            placeholder="https://example.com/avatar.jpg"
-                            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-sm"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Paste a direct link to an image.</p>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block mb-1 text-xs font-semibold text-gray-600 uppercase">Full Name</label>
+                            <input
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                                placeholder="John Doe"
+                            />
+                        </div>
+                        <div>
+                            <label className="block mb-1 text-xs font-semibold text-gray-600 uppercase">Phone</label>
+                            <input
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                                placeholder="+62..."
+                            />
+                        </div>
+                        <div>
+                            <label className="block mb-1 text-xs font-semibold text-gray-600 uppercase">Address</label>
+                            <input
+                                value={address}
+                                onChange={(e) => setAddress(e.target.value)}
+                                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                                placeholder="Street name..."
+                            />
+                        </div>
                     </div>
-                </div>
 
-                <label className="block mb-2 text-sm font-medium text-gray-700">Name (optional)</label>
-                <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    maxLength={50}
-                    placeholder="Enter your full name"
-                    className="w-full p-3 border rounded mb-4 focus:ring-2 focus:ring-green-500 outline-none"
-                />
-
-                <label className="block mb-2 text-sm font-medium text-gray-700">Phone (optional)</label>
-                <input
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    maxLength={20}
-                    placeholder="+62 812 3456 7890"
-                    className="w-full p-3 border rounded mb-4 focus:ring-2 focus:ring-green-500 outline-none"
-                />
-
-                <label className="block mb-2 text-sm font-medium text-gray-700">Address (optional)</label>
-                <input
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    maxLength={200}
-                    placeholder="Jl. Example No. 123, City"
-                    className="w-full p-3 border rounded mb-4 focus:ring-2 focus:ring-green-500 outline-none"
-                />
-
-
-
-                <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-3 bg-green-600 text-white rounded font-semibold disabled:opacity-50"
-                >
-                    {loading ? 'Saving...' : 'Complete Profile'}
-                </button>
-            </form>
-        </div>
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full mt-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold shadow-md transition-colors disabled:opacity-50"
+                    >
+                        {loading ? 'Saving...' : 'Finish & Go to Profile'}
+                    </button>
+                </form>
+            </div>
         </>
     );
 }

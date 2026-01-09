@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { useAuth } from "@/lib/context/AuthContext"; // Pastikan path ini benar
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -39,65 +40,74 @@ type Order = {
 
 export default function ProfilePage() {
     const router = useRouter();
+    const { authLoading, isAuthenticated, checkAuthStatus } = useAuth(); // Gunakan status dari Context
+    
     const [activeTab, setActiveTab] = useState<'profile' | 'orders'>('profile');
     const [profile, setProfile] = useState<User | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
     const [error, setError] = useState('');
-    const [loading, setLoading] = useState(true);
+    const [loadingData, setLoadingData] = useState(true);
     const [updating, setUpdating] = useState(false);
 
-    // Editable fields
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [address, setAddress] = useState('');
     const [avatar, setAvatar] = useState('');
 
+    // Gunakan useCallback agar tidak memicu infinite loop di useEffect
+    const fetchData = useCallback(async () => {
+        const token = localStorage.getItem('access_token'); // SESUAIKAN KEY DISINI
+        if (!token) return;
+
+        try {
+            setLoadingData(true);
+            // Fetch profile
+            const profileRes = await fetch(`${API_URL}/auth/me`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!profileRes.ok) throw new Error('Failed to fetch profile');
+            const profileData: User = await profileRes.json();
+
+            setProfile(profileData);
+            setName(profileData.name || '');
+            setPhone(profileData.phone || '');
+            setAddress(profileData.address || '');
+            setAvatar(profileData.avatar || '');
+
+            // Fetch orders
+            const ordersRes = await fetch(`${API_URL}/orders/my-orders`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (ordersRes.ok) {
+                const ordersData: Order[] = await ordersRes.json();
+                setOrders(ordersData);
+            }
+        } catch (err) {
+            console.error(err);
+            setError('Failed to load data');
+        } finally {
+            setLoadingData(false);
+        }
+    }, []);
+
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) {
+        // 1. Jika loading auth selesai dan tidak login, baru usir ke /Auth
+        if (!authLoading && !isAuthenticated) {
             router.replace('/Auth');
             return;
         }
 
-        const fetchData = async () => {
-            try {
-                // Fetch profile
-                const profileRes = await fetch(`${API_URL}/auth/me`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                if (!profileRes.ok) throw new Error('Failed to fetch profile');
-                const profileData: User = await profileRes.json();
-
-                setProfile(profileData);
-                setName(profileData.name || '');
-                setPhone(profileData.phone || '');
-                setAddress(profileData.address || '');
-                setAvatar(profileData.avatar || '');
-
-                // Fetch orders
-                const ordersRes = await fetch(`${API_URL}/orders/my-orders`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                if (ordersRes.ok) {
-                    const ordersData: Order[] = await ordersRes.json();
-                    setOrders(ordersData);
-                }
-            } catch (err) {
-                console.error(err);
-                setError('Failed to load data');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-    }, [router]);
+        // 2. Jika sudah login, baru ambil data
+        if (isAuthenticated) {
+            fetchData();
+        }
+    }, [authLoading, isAuthenticated, router, fetchData]);
 
     const handleUpdateProfile = async () => {
         setUpdating(true);
         setError('');
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('access_token'); // SESUAIKAN KEY DISINI
             const res = await fetch(`${API_URL}/auth/update-profile`, {
                 method: 'PATCH',
                 headers: {
@@ -107,29 +117,38 @@ export default function ProfilePage() {
                 body: JSON.stringify({ name, phone, address, avatar }),
             });
             if (!res.ok) throw new Error('Failed to update profile');
+            
             const updated: User = await res.json();
             setProfile(updated);
+            
+            // Sync ulang navbar agar nama berubah
+            if (checkAuthStatus) await checkAuthStatus();
+            
             alert('Profile updated successfully!');
         } catch (err) {
-            console.error(err);
             setError('Failed to update profile');
         } finally {
             setUpdating(false);
         }
     };
 
-    if (loading) {
-        return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    // Tampilkan loading jika status AUTH atau data PROFILE sedang dimuat
+    if (authLoading || (loadingData && !profile)) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="flex flex-col items-center gap-2">
+                    <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-gray-500 font-medium">Loading profile...</p>
+                </div>
+            </div>
+        );
     }
 
-    if (error && !profile) {
-        return <div className="min-h-screen flex items-center justify-center text-red-600">{error}</div>;
-    }
+    if (!isAuthenticated) return null;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 py-20 px-4">
             <div className="max-w-4xl mx-auto">
-
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -168,9 +187,7 @@ export default function ProfilePage() {
                 {/* CONTENT */}
                 {activeTab === 'profile' ? (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-2xl shadow-xl p-8">
-
                         {error && <p className="text-red-600 mb-4">{error}</p>}
-
                         <div className="space-y-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
@@ -188,7 +205,7 @@ export default function ProfilePage() {
                                     type="text"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
                                 />
                             </div>
 
@@ -198,7 +215,7 @@ export default function ProfilePage() {
                                     type="tel"
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
                                 />
                             </div>
 
@@ -208,7 +225,7 @@ export default function ProfilePage() {
                                     value={address}
                                     onChange={(e) => setAddress(e.target.value)}
                                     rows={3}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
                                 />
                             </div>
 
@@ -218,10 +235,10 @@ export default function ProfilePage() {
                                     type="url"
                                     value={avatar}
                                     onChange={(e) => setAvatar(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 outline-none"
                                 />
                                 {avatar && (
-                                    <img src={avatar} alt="Avatar preview" className="mt-3 w-24 h-24 rounded-full object-cover" />
+                                    <img src={avatar} alt="Avatar preview" className="mt-3 w-24 h-24 rounded-full object-cover border" />
                                 )}
                             </div>
 
@@ -252,49 +269,26 @@ export default function ProfilePage() {
                                                 {new Date(order.createdAt).toLocaleDateString()}
                                             </p>
                                         </div>
-
-                                        <span
-                                            className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                                order.status === 'DELIVERED'
-                                                    ? 'bg-green-100 text-green-700'
-                                                    : order.status === 'PENDING'
-                                                    ? 'bg-yellow-100 text-yellow-700'
-                                                    : 'bg-blue-100 text-blue-700'
-                                            }`}
-                                        >
+                                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                            order.status === 'DELIVERED' ? 'bg-green-100 text-green-700' : 
+                                            order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'
+                                        }`}>
                                             {order.status}
                                         </span>
                                     </div>
-
                                     <div className="border-t pt-4">
-                                        <p className="text-sm text-gray-600 mb-2">
-                                            <span className="font-medium">Type:</span> {order.orderType}
-                                            {order.tableNumber && ` | Table ${order.tableNumber}`}
-                                        </p>
-
                                         <div className="space-y-2 mb-4">
                                             {order.orderItems.map((item) => (
                                                 <div key={item.id} className="flex justify-between text-sm">
-                                                    <span>
-                                                        {item.quantity}x {item.product.name}
-                                                    </span>
-                                                    <span>
-                                                        Rp {(item.price * item.quantity).toLocaleString()}
-                                                    </span>
+                                                    <span>{item.quantity}x {item.product.name}</span>
+                                                    <span>Rp {(item.price * item.quantity).toLocaleString()}</span>
                                                 </div>
                                             ))}
                                         </div>
-
                                         <div className="border-t pt-2 flex justify-between font-bold">
                                             <span>Total</span>
                                             <span>Rp {order.total.toLocaleString()}</span>
                                         </div>
-
-                                        {order.notes && (
-                                            <p className="text-sm text-gray-600 mt-3 italic">
-                                                Note: {order.notes}
-                                            </p>
-                                        )}
                                     </div>
                                 </div>
                             ))
