@@ -9,19 +9,19 @@ import { AnimatedHeading, AnimatedParagraph } from "./animations";
 const cafePhotos = [
   { 
     title: "Zona Santai", 
-    img: "/Landing/kasir1.jpg", 
+    img: "https://res.cloudinary.com/dogx3ps3r/image/upload/v1765320842/IMG_20251115_081321_dwieqq.jpg", 
     alt: "Foto meja dan kursi kayu di sudut kafe yang nyaman.",
     tag: "Interior"
   },
   { 
     title: "Sudut Penuh Cahaya", 
-    img: "/Landing/kasir1.jpg", 
+    img: "https://res.cloudinary.com/dogx3ps3r/image/upload/v1765320858/IMG_20251115_085941_yfch2j.jpg", 
     alt: "Area bar smoothie dengan cahaya alami yang masuk.",
     tag: "Bar"
   },
   { 
     title: "Meja Komunal", 
-    img: "/Landing/kasir1.jpg", 
+    img: "https://res.cloudinary.com/dogx3ps3r/image/upload/v1765320827/IMG_20251115_090216_yrihoi.jpg", 
     // FIX: Menambahkan properti 'alt' yang hilang
     alt: "Meja panjang komunal untuk bekerja atau berkumpul.", 
     tag: "Co-Working"
@@ -35,7 +35,7 @@ const cafePhotos = [
   },
   { 
     title: "Teras Kafe", 
-    img: "/Landing/kasir1.jpg", 
+    img: "https://res.cloudinary.com/dogx3ps3r/image/upload/v1765320846/IMG_20251115_085839_e9zpmv.jpg", 
     alt: "Area teras luar ruangan dengan tanaman hijau.",
     tag: "Outdoor"
   },

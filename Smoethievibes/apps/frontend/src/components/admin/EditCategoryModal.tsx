@@ -42,7 +42,7 @@ export default function EditCategoryModal({
     setLoading(true);
     setError("");
 
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("access_token") || localStorage.getItem("token");
       if (!token) {
         setError("Authentication required");
         setLoading(false);

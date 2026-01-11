@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { authAPI } from "@/lib/api";
+import { ShieldAlert, UserCheck, UserX, Users } from "lucide-react";
 
-const API_URL = "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 type UserRole = "ADMIN" | "CUSTOMER" | "STAFF" | "MANAGER";
 
@@ -23,222 +25,222 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editRole, setEditRole] = useState<UserRole>("CUSTOMER");
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/login");
+  const fetchUsers = useCallback(async () => {
+  try {
+    setLoading(true);
+    setError(null);
+
+    const headers = authAPI.getAuthHeaders();
+    
+    // 1. Check if token exists locally first
+    if (!headers || !headers.Authorization) {
+      console.warn("No token found, redirecting...");
+      router.push("/Auth");
       return;
     }
 
-    console.log("Token found:", token ? "Yes" : "No");
-    console.log("Fetching users from:", `${API_URL}/users`);
-
-    fetch(`${API_URL}/users`, {
+    const res = await fetch(`${API_URL}/users`, {
       headers: {
-        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        ...headers,
       },
-    })
-      .then((res) => {
-        console.log("Response status:", res.status);
-        console.log("Response ok:", res.ok);
-        if (!res.ok) {
-          return res.json().then(errData => {
-            console.error("Server error response:", errData);
-            throw new Error(errData.message || `HTTP ${res.status}: Failed to fetch users`);
-          }).catch(() => {
-            throw new Error(`HTTP ${res.status}: Failed to fetch users`);
-          });
-        }
-        return res.json();
-      })
-      .then((data) => {
-        console.log("Users data received:", data);
-        setUsers(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching users:", err);
-        setError(err.message || "Failed to load users. Please try again.");
-        setLoading(false);
-      });
+    });
+
+    // 2. Handle 401 IMMEDIATELY
+    if (res.status === 401) {
+      localStorage.removeItem("access_token");
+      router.replace("/Auth"); // Use replace to prevent back-button loops
+      return;
+    }
+
+    // 3. Handle 403
+    if (res.status === 403) {
+      throw new Error("Akses Ditolak: Anda bukan Admin.");
+    }
+
+    // 4. Handle other errors (This is where your code was crashing)
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || `Error ${res.status}: Gagal mengambil data.`);
+    }
+
+    // 5. Success
+    const data = await res.json();
+    const finalData = Array.isArray(data) ? data : (data.data || []);
+    setUsers(finalData);
+
+  } catch (err: any) {
+    console.error("User Fetch Error:", err);
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
   }, [router]);
 
-  const handleRoleEdit = (user: User) => {
-    setEditingUser(user.id);
-    setEditRole(user.role);
-  };
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
-  const handleRoleUpdate = async (userId: string) => {
+  const handleRoleUpdate = useCallback(async (userId: string) => {
+    const headers = authAPI.getAuthHeaders();
+    if (!headers.Authorization) {
+      localStorage.removeItem("access_token");
+      router.push("/Auth");
+      return;
+    }
+
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${API_URL}/users/${userId}`, {
+      setLoading(true);
+      const res = await fetch(`${API_URL}/users/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...headers,
         },
         body: JSON.stringify({ role: editRole }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to update user role");
+      if (res.status === 401) {
+        localStorage.removeItem("access_token");
+        router.push("/Auth");
+        return;
       }
 
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, role: editRole } : user
-      ));
-      setEditingUser(null);
-      
-      alert("User role updated successfully!");
-    } catch (error) {
-      console.error("Error updating user role:", error);
-      alert("Failed to update user role");
-    }
-  };
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `Gagal mengubah role (status ${res.status})`);
+      }
 
-  const handleToggleStatus = async (user: User) => {
+      const updated = await res.json();
+      // update lokal
+      setUsers((prev) => prev.map(u => u.id === userId ? { ...u, role: updated.role || editRole } : u));
+      setEditingUser(null);
+    } catch (err: any) {
+      console.error("Update Role Error:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [editRole, router]);
+
+  const handleToggleStatus = useCallback(async (userId: string, current: boolean) => {
+    const headers = authAPI.getAuthHeaders();
+    if (!headers.Authorization) {
+      localStorage.removeItem("access_token");
+      router.push("/Auth");
+      return;
+    }
+
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${API_URL}/users/${user.id}`, {
+      setLoading(true);
+      const res = await fetch(`${API_URL}/users/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...headers,
         },
-        body: JSON.stringify({ isActive: !user.isActive }),
+        body: JSON.stringify({ isActive: !current }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to update user status");
+      if (res.status === 401) {
+        localStorage.removeItem("access_token");
+        router.push("/Auth");
+        return;
       }
 
-      // Update local state
-      setUsers(users.map(u => 
-        u.id === user.id ? { ...u, isActive: !u.isActive } : u
-      ));
-      
-      alert(`User ${user.isActive ? 'deactivated' : 'activated'} successfully!`);
-    } catch (error) {
-      console.error("Error updating user status:", error);
-      alert("Failed to update user status");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `Gagal mengubah status (status ${res.status})`);
+      }
+
+      const updated = await res.json();
+      setUsers((prev) => prev.map(u => u.id === userId ? { ...u, isActive: updated.isActive ?? !current } : u));
+    } catch (err: any) {
+      console.error("Toggle Status Error:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [router]);
 
-  const handleCancelEdit = () => {
-    setEditingUser(null);
-  };
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center h-64">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600 mb-4"></div>
+      <p className="text-gray-500">Memuat daftar user...</p>
+    </div>
+  );
 
-  const getRoleBadgeColor = (role: UserRole) => {
-    switch (role) {
-      case "ADMIN":
-        return "bg-red-100 text-red-800";
-      case "MANAGER":
-        return "bg-purple-100 text-purple-800";
-      case "STAFF":
-        return "bg-blue-100 text-blue-800";
-      case "CUSTOMER":
-        return "bg-green-100 text-green-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading users...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-center">
-          <div className="text-red-600 text-xl mb-2">⚠️ Error</div>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (users.length === 0) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-center">
-          <div className="text-gray-400 text-6xl mb-4">👥</div>
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">No Users Found</h2>
-          <p className="text-gray-500">There are no users in the system yet.</p>
-        </div>
-      </div>
-    );
-  }
-
-  const getUserStats = () => {
-    const total = users.length;
-    const active = users.filter(u => u.isActive).length;
-    const byRole = users.reduce((acc, user) => {
-      acc[user.role] = (acc[user.role] || 0) + 1;
-      return acc;
-    }, {} as Record<UserRole, number>);
-
-    return { total, active, byRole };
-  };
-
-  const stats = getUserStats();
+  if (error) return (
+    <div className="bg-red-50 border border-red-200 p-8 rounded-xl text-center">
+      <ShieldAlert className="mx-auto text-red-500 mb-4" size={48} />
+      <h3 className="text-lg font-bold text-red-800">Akses Dibatasi</h3>
+      <p className="text-red-600 mb-4">{error}</p>
+      <button 
+        onClick={() => router.push('/')}
+        className="bg-gray-800 text-white px-6 py-2 rounded-lg"
+      >
+        Kembali ke Home
+      </button>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-semibold tracking-tight">User Management</h2>
-        <div className="text-sm text-gray-500">
-          Total: {stats.total} users • Active: {stats.active}
+        <h2 className="text-2xl font-bold flex items-center gap-2">
+          <Users className="text-green-600" /> Manajemen User
+        </h2>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white p-4 rounded-xl border shadow-sm">
+          <p className="text-gray-500 text-sm">Total User</p>
+          <p className="text-2xl font-bold">{users.length}</p>
+        </div>
+        <div className="bg-white p-4 rounded-xl border shadow-sm text-green-600">
+          <p className="text-gray-500 text-sm">User Aktif</p>
+          <p className="text-2xl font-bold">{users.filter(u => u.isActive).length}</p>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {(Object.keys(stats.byRole) as UserRole[]).map(role => (
-          <div key={role} className="bg-white p-4 rounded-lg shadow-md">
-            <div className="text-sm text-gray-500">{role}</div>
-            <div className="text-2xl font-bold">{stats.byRole[role]}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="bg-white border rounded-xl shadow-sm p-6">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="text-left border-b">
-              <th className="pb-3">Name</th>
-              <th className="pb-3">Email</th>
-              <th className="pb-3">Role</th>
-              <th className="pb-3">Status</th>
-              <th className="pb-3 text-right">Actions</th>
+      <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
+        <table className="w-full text-left border-collapse">
+          <thead className="bg-gray-50 border-b">
+            <tr>
+              <th className="px-6 py-4 text-sm font-semibold text-gray-600">User</th>
+              <th className="px-6 py-4 text-sm font-semibold text-gray-600">Role</th>
+              <th className="px-6 py-4 text-sm font-semibold text-gray-600">Status</th>
+              <th className="px-6 py-4 text-right text-sm font-semibold text-gray-600">Aksi</th>
             </tr>
           </thead>
-
-          <tbody>
+          <tbody className="divide-y">
             {users.map((u) => (
-              <tr key={u.id} className="border-b last:border-none">
-                <td className="py-3">{u.name || "No Name"}</td>
-                <td>{u.email}</td>
-                <td>
+              <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4">
+                  <div className="font-medium text-gray-900">{u.name || "N/A"}</div>
+                  <div className="text-xs text-gray-500">{u.email}</div>
+                </td>
+                <td className="px-6 py-4">
+                  <span className={`px-2 py-1 rounded-md text-xs font-bold ${
+                    u.role === 'ADMIN' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {u.role}
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  {u.isActive ? (
+                    <span className="flex items-center gap-1 text-green-600 text-sm"><UserCheck size={14}/> Aktif</span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-red-400 text-sm"><UserX size={14}/> Nonaktif</span>
+                  )}
+                </td>
+                <td className="px-6 py-4 text-right">
                   {editingUser === u.id ? (
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center justify-end gap-2">
                       <select
                         value={editRole}
                         onChange={(e) => setEditRole(e.target.value as UserRole)}
-                        className="text-sm px-2 py-1 border rounded"
+                        className="border rounded px-2 py-1 text-sm"
                       >
                         <option value="ADMIN">ADMIN</option>
                         <option value="MANAGER">MANAGER</option>
@@ -247,54 +249,34 @@ export default function UsersPage() {
                       </select>
                       <button
                         onClick={() => handleRoleUpdate(u.id)}
-                        className="text-green-600 hover:underline text-sm"
+                        className="bg-green-600 text-white px-3 py-1 rounded text-sm"
                       >
                         Save
                       </button>
                       <button
-                        onClick={handleCancelEdit}
-                        className="text-gray-600 hover:underline text-sm"
+                        onClick={() => setEditingUser(null)}
+                        className="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm"
                       >
                         Cancel
                       </button>
                     </div>
                   ) : (
-                    <span className={`text-sm px-3 py-1 rounded-lg ${getRoleBadgeColor(u.role)}`}>
-                      {u.role}
-                    </span>
+                    <div className="flex items-center justify-end gap-4">
+                      <button
+                        onClick={() => { setEditingUser(u.id); setEditRole(u.role); }}
+                        className="text-blue-600 text-sm hover:underline"
+                      >
+                        Edit Role
+                      </button>
+                      <button
+                        onClick={() => handleToggleStatus(u.id, u.isActive)}
+                        className={`text-sm px-3 py-1 rounded ${u.isActive ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+                      >
+                        {u.isActive ? 'Deactivate' : 'Activate'}
+                      </button>
+                    </div>
                   )}
-                 </td>
-                 <td>
-                   <span className={`text-sm px-3 py-1 rounded-lg ${
-                     u.isActive 
-                       ? "bg-green-100 text-green-800" 
-                       : "bg-red-100 text-red-800"
-                   }`}>
-                     {u.isActive ? "Active" : "Inactive"}
-                   </span>
-                 </td>
-                 <td className="text-right">
-                   {editingUser !== u.id && (
-                     <div className="flex justify-end space-x-2">
-                       <button
-                         onClick={() => handleRoleEdit(u)}
-                         className="text-blue-600 hover:underline text-sm"
-                       >
-                         Edit Role
-                       </button>
-                       <button
-                         onClick={() => handleToggleStatus(u)}
-                         className={`text-sm hover:underline ${
-                           u.isActive 
-                             ? "text-red-600 hover:text-red-800" 
-                             : "text-green-600 hover:text-green-800"
-                         }`}
-                       >
-                         {u.isActive ? "Deactivate" : "Activate"}
-                       </button>
-                     </div>
-                   )}
-                 </td>
+                </td>
               </tr>
             ))}
           </tbody>

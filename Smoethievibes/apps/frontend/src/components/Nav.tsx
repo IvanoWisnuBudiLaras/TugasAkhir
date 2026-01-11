@@ -4,80 +4,39 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/context/AuthContext"; // Import Context
 import {
     Menu,
     LogOut,
     ChevronDown,
-    X, // Tambahkan ikon X untuk menutup menu
+    X,
 } from "lucide-react";
 
-import { CartIcon } from "./CartIcon"; // Asumsi CartIcon sudah diimpor dengan benar
+import { CartIcon } from "./CartIcon";
 
-const API_URL = "http://localhost:3001"
-
-type UserProfile = {
-    id: string;
-    email: string;
-    name?: string | null;
-    avatar?: string | null;
-    phone?: string | null;
-    address?: string | null;
-    role?: string;
-};
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 type BackendCategory = {
     id: string;
     name: string;
-    description?: string | null;
-    createdAt?: string;
-    updatedAt?: string;
 };
-
-// Kategori akan di-fetch dari API (default: 'Semua Menu' sementara)
-
 
 export default function Nav() {
     const router = useRouter();
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [isAdmin, setIsAdmin] = useState(false);
-    const [loading, setLoading] = useState(true);
+    
+    // AMBIL STATE GLOBAL DARI AUTH CONTEXT
+    const { user, isAuthenticated, authLoading, logout } = useAuth();
+    
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // State untuk menu mobile
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [categories, setCategories] = useState<{ name: string; href: string }[]>([
         { name: "Semua Menu", href: "/Kategori" },
     ]);
 
-    // ... (useEffect dan handleLogout tetap sama)
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            setLoading(false);
-            return;
-        }
+    // Check Admin status berdasarkan data user dari context
+    const isAdmin = user?.role === 'ADMIN';
 
-        const fetchProfile = async () => {
-            try {
-                const res = await fetch(`${API_URL}/auth/me`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                if (!res.ok) throw new Error('Failed to fetch profile');
-                const profile: UserProfile = await res.json();
-                setIsLoggedIn(true);
-                setIsAdmin(profile.role === 'ADMIN');
-            } catch (error) {
-                console.error('Error fetching profile:', error);
-                localStorage.removeItem('token');
-                setIsLoggedIn(false);
-                setIsAdmin(false);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchProfile();
-    }, []);
-
-    // Fetch categories from backend
+    // Fetch categories tetap dilakukan di sini (karena kategori bersifat publik)
     useEffect(() => {
         const fetchCategories = async () => {
             try {
@@ -96,46 +55,21 @@ export default function Nav() {
                 console.error('Error fetching categories:', error);
             }
         };
-
         fetchCategories();
     }, []);
 
-    const handleLogout = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-
-        try {
-            await fetch(`${API_URL}/auth/logout`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}` },
-            });
-        } catch (error) {
-            console.error('Logout failed:', error);
-        } finally {
-            localStorage.removeItem('token');
-            setIsLoggedIn(false);
-            setIsAdmin(false);
-            router.push('/');
-        }
+    const handleLogoutClick = async () => {
+        await logout(); // Memanggil fungsi logout dari context
+        setIsMobileMenuOpen(false);
     };
-    // ...
 
     const closeMobileMenu = () => setIsMobileMenuOpen(false);
-
-
-    // -----------------------------------------------------------------------------------------------------------------
 
     return (
         <>
             {/* 1. DESKTOP NAV */}
-            <header className="
-                hidden md:block
-                fixed top-0 left-0 w-full z-50
-                bg-white/90 backdrop-blur-md 
-                border-b border-gray-200
-            ">
+            <header className="hidden md:block fixed top-0 left-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-gray-200">
                 <nav className="w-full max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-
                     {/* Logo */}
                     <Link href="/" className="flex items-center gap-3">
                         <Image src="/logo2.png" alt="Logo" width={38} height={38} className="object-cover rounded-full border border-gray-200" />
@@ -146,61 +80,55 @@ export default function Nav() {
                     <ul className="flex items-center gap-8 text-black/70 text-[15px] font-medium">
                         <li className="hover:text-green-600 transition"><Link href="/">Home</Link></li>
 
-                        {/* START DROPDOWN KATEGORI */}
-                        <li
-                            className="relative"
-                            onMouseEnter={() => setIsCategoryOpen(true)}
-                            onMouseLeave={() => setIsCategoryOpen(false)}
-                        >
+                        {/* DROPDOWN KATEGORI */}
+                        <li className="relative" onMouseEnter={() => setIsCategoryOpen(true)} onMouseLeave={() => setIsCategoryOpen(false)}>
                             <button className="flex items-center gap-1 hover:text-green-600 transition focus:outline-none">
                                 Kategori
                                 <ChevronDown size={16} className={`transform transition-transform ${isCategoryOpen ? 'rotate-180' : 'rotate-0'}`} />
                             </button>
-
                             {isCategoryOpen && (
-                                <div className="
-                                    absolute top-full left-1/2 -translate-x-1/2 mt-3 w-40
-                                    bg-white rounded-lg shadow-xl border border-gray-100
-                                    overflow-hidden
-                                ">
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-40 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden">
                                     {categories.map((item) => (
-                                        <Link
-                                            key={item.name}
-                                            href={item.href}
-                                            onClick={() => setIsCategoryOpen(false)}
-                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 transition"
-                                        >
+                                        <Link key={item.name} href={item.href} onClick={() => setIsCategoryOpen(false)}
+                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 transition">
                                             {item.name}
                                         </Link>
                                     ))}
                                 </div>
                             )}
                         </li>
-                        {/* END DROPDOWN KATEGORI */}
 
                         <li className="hover:text-green-600 transition"><Link href="/Tentang">Tentang</Link></li>
                         <li className="hover:text-green-600 transition"><Link href="/Contact">Contact</Link></li>
-                        {isLoggedIn && <li className="hover:text-green-600 transition"><Link href="/Profile">Profile</Link></li>}
-                        {isAdmin && <li className="hover:text-green-600 transition"><Link href="/admin/dashboard">Admin Dashboard</Link></li>}
+                        
+                        {/* Sinkronisasi State Login & Admin */}
+                        {isAuthenticated && <li className="hover:text-green-600 transition"><Link href="/Profile">Profile</Link></li>}
+                        {/* Link Admin Dashboard - Desktop */}
+                          {isAdmin && (
+                              <li className="group">
+                                  <Link 
+                                      href="/admin" 
+                                      className="flex items-center gap-1 font-bold text-orange-600 hover:text-orange-700 transition"
+                                  >
+                                      <span className="relative">
+                                          Admin Panel
+                                          <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-orange-600 transition-all group-hover:width-full"></span>
+                                      </span>
+                                  </Link>
+                              </li>
+                          )}
                     </ul>
 
-                    {/* CTA Buttons (Sign In or Logout) */}
+                    {/* CTA Buttons */}
                     <div className="flex items-center gap-4">
                         <CartIcon />
-                        {!loading && (
-                            isLoggedIn ? (
-                                <button
-                                    onClick={handleLogout}
-                                    className="bg-red-500 text-white font-semibold px-6 py-2 rounded-full hover:bg-red-600 transition inline-flex items-center gap-2"
-                                >
-                                    <LogOut size={18} />
-                                    Logout
+                        {!authLoading && (
+                            isAuthenticated ? (
+                                <button onClick={handleLogoutClick} className="bg-red-500 text-white font-semibold px-6 py-2 rounded-full hover:bg-red-600 transition inline-flex items-center gap-2">
+                                    <LogOut size={18} /> Logout
                                 </button>
                             ) : (
-                                <Link
-                                    href="/Auth"
-                                    className="bg-green-600 text-white font-semibold px-6 py-2 rounded-full hover:bg-green-700 transition inline-block text-center"
-                                >
+                                <Link href="/Auth" className="bg-green-600 text-white font-semibold px-6 py-2 rounded-full hover:bg-green-700 transition inline-block text-center">
                                     Sign In
                                 </Link>
                             )
@@ -209,79 +137,54 @@ export default function Nav() {
                 </nav>
             </header>
 
-            {/* 2. MOBILE TOP NAV (LOGO + HAMBURGER) */}
-            <header className="
-                md:hidden
-                fixed top-0 left-0 w-full z-50
-                bg-white/90 backdrop-blur-md
-                border-b border-gray-200
-                px-5 py-3
-                flex items-center justify-between
-            ">
-                {/* Logo */}
+            {/* 2. MOBILE TOP NAV */}
+            <header className="md:hidden fixed top-0 left-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-gray-200 px-5 py-3 flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-2" onClick={closeMobileMenu}>
                     <Image src="/logo2.png" alt="Logo" width={34} height={34} className="rounded-full border border-gray-200" />
                     <span className="text-[17px] font-bold text-green-600">SmoethieVibe</span>
                 </Link>
-
-                {/* Hamburger Button & Cart Icon (ditempatkan di sini agar tidak terulang di menu) */}
                 <div className="flex items-center gap-3">
-                    {/* Perbaiki potensi nested 'a' dengan hanya menampilkan CartIcon di sini (jika CartIcon sudah memiliki Link internal) */}
                     <CartIcon /> 
-                    <button
-                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        className="p-2 rounded-md bg-gray-100 border border-gray-200 text-green-600 hover:bg-gray-200 transition"
-                    >
+                    <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-md bg-gray-100 text-green-600">
                         {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
                     </button>
                 </div>
             </header>
 
-            {/* 3. MOBILE SIDEBAR/FULL MENU (HAMBURGER) */}
-            <nav className={`
-                fixed top-[60px] left-0 h-screen w-full z-40
-                bg-white/95 backdrop-blur-sm
-                p-8 md:hidden
-                transform transition-transform duration-300 ease-in-out
-                ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-            `}>
+            {/* 3. MOBILE SIDEBAR */}
+            <nav className={`fixed top-[60px] left-0 h-screen w-full z-40 bg-white/95 backdrop-blur-sm p-8 md:hidden transform transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 <ul className="flex flex-col gap-6 text-xl font-semibold text-gray-700">
-                    <li onClick={closeMobileMenu} className="hover:text-green-600 transition border-b border-gray-100 pb-3"><Link href="/">Home</Link></li>
-                    
-                    {/* Menu Kategori di Mobile (Tidak perlu Dropdown penuh) */}
+                    <li onClick={closeMobileMenu} className="border-b pb-3"><Link href="/">Home</Link></li>
                     <li className="font-bold text-lg text-green-600 pt-2">Kategori</li>
                     {categories.map((item) => (
-                         <li key={item.name} onClick={closeMobileMenu} className="pl-4 text-gray-600 hover:text-green-600 transition border-b border-gray-100 pb-3">
+                         <li key={item.name} onClick={closeMobileMenu} className="pl-4 text-gray-600 border-b pb-3">
                              <Link href={item.href}>{item.name}</Link>
                          </li>
                     ))}
-
-                    <li onClick={closeMobileMenu} className="hover:text-green-600 transition border-b border-gray-100 pb-3"><Link href="/Tentang">Tentang</Link></li>
-                    <li onClick={closeMobileMenu} className="hover:text-green-600 transition border-b border-gray-100 pb-3"><Link href="/Contact">Contact</Link></li>
+                    <li onClick={closeMobileMenu} className="border-b pb-3"><Link href="/Tentang">Tentang</Link></li>
                     
-                    {/* Opsi Login/Profile/Admin */}
-                    {!loading && (
-                        isLoggedIn ? (
+                    {!authLoading && (
+                        isAuthenticated ? (
                             <>
-                                <li onClick={closeMobileMenu} className="hover:text-green-600 transition border-b border-gray-100 pb-3"><Link href="/Profile">Profile</Link></li>
-                                {isAdmin && <li onClick={closeMobileMenu} className="hover:text-green-600 transition border-b border-gray-100 pb-3"><Link href="/admin/dashboard">Admin Dashboard</Link></li>}
+                                <li onClick={closeMobileMenu} className="border-b pb-3"><Link href="/Profile">Profile</Link></li>
+                                {/* Link Admin Dashboard - Mobile */}
+                                  {isAdmin && (
+                                      <li onClick={closeMobileMenu} className="border-b border-orange-100 pb-3">
+                                          <Link href="/admin" className="flex items-center justify-between text-orange-600 font-bold">
+                                              Admin Dashboard
+                                              <span className="bg-orange-100 text-[10px] px-2 py-0.5 rounded-full">Staff Only</span>
+                                          </Link>
+                                      </li>
+                                  )}
                                 <li className="pt-4">
-                                    <button
-                                        onClick={() => { handleLogout(); closeMobileMenu(); }}
-                                        className="w-full bg-red-500 text-white font-semibold px-6 py-3 rounded-xl hover:bg-red-600 transition flex items-center justify-center gap-2"
-                                    >
-                                        <LogOut size={20} />
-                                        Logout
+                                    <button onClick={handleLogoutClick} className="w-full bg-red-500 text-white font-semibold px-6 py-3 rounded-xl flex items-center justify-center gap-2">
+                                        <LogOut size={20} /> Logout
                                     </button>
                                 </li>
                             </>
                         ) : (
                             <li className="pt-4">
-                                <Link
-                                    href="/Auth"
-                                    onClick={closeMobileMenu}
-                                    className="w-full bg-green-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-green-700 transition flex items-center justify-center text-center"
-                                >
+                                <Link href="/Auth" onClick={closeMobileMenu} className="w-full bg-green-600 text-white font-semibold px-6 py-3 rounded-xl block text-center">
                                     Sign In
                                 </Link>
                             </li>

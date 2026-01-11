@@ -90,7 +90,7 @@ export default function AdminLayout({
       </aside>
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 p-8">{children}</main>
+      <main className="flex-1 p-8 mt-10">{children}</main>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from 'next/image';
 import { Plus } from "lucide-react";
 import AddProductModal from "@/components/admin/AddProductModal";
+import EditProductModal from "@/components/admin/EditProductModal";
 
 const API_URL = "http://localhost:3001";
 
@@ -22,10 +23,12 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("access_token") || localStorage.getItem("token");
       if (!token) {
         router.push("/Auth");
         return;
@@ -105,7 +108,9 @@ export default function ProductsPage() {
                 <span className="text-sm text-gray-600">
                   Stock: <strong>{p.stock}</strong>
                 </span>
-                <button className="text-blue-600 hover:underline text-sm">
+                <button
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="text-blue-600 hover:underline text-sm">
                   Edit
                 </button>
               </div>
@@ -118,6 +123,12 @@ export default function ProductsPage() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onProductAdded={() => window.location.reload()}
+      />
+      <EditProductModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        product={selectedProduct}
+        onProductUpdated={() => window.location.reload()}
       />
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { authAPI } from "@/lib/api";
 
 const API_URL = "http://localhost:3001";
 
@@ -55,55 +56,47 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     const fetchAnalytics = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
+      const headers = authAPI.getAuthHeaders();
+      if (!headers.Authorization) {
         router.push("/Auth");
         return;
       }
 
       try {
         // Fetch popular products
-        const productsResponse = await fetch(`${API_URL}/analytics/popular-products`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const productsResponse = await fetch(`${API_URL}/analytics/popular-products`, { headers });
         if (productsResponse.ok) {
-          const productsData = await productsResponse.json();
-          setPopularProducts(productsData);
+          const productsData = await productsResponse.json().catch(() => []);
+          setPopularProducts(productsData || []);
+        } else {
+          console.error('popular-products fetch failed', productsResponse.status);
         }
 
         // Fetch customer analytics
-        const customersResponse = await fetch(`${API_URL}/analytics/customers`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const customersResponse = await fetch(`${API_URL}/analytics/customers`, { headers });
         if (customersResponse.ok) {
-          const customersData = await customersResponse.json();
-          setCustomers(customersData);
+          const customersData = await customersResponse.json().catch(() => []);
+          setCustomers(customersData || []);
+        } else {
+          console.error('customers fetch failed', customersResponse.status);
         }
 
-        // Fetch inventory alerts
-        const inventoryResponse = await fetch(`${API_URL}/analytics/inventory`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        // Fetch inventory alerts (backend route is inventory-alerts)
+        const inventoryResponse = await fetch(`${API_URL}/analytics/inventory-alerts`, { headers });
         if (inventoryResponse.ok) {
-          const inventoryData = await inventoryResponse.json();
-          setInventoryAlerts(inventoryData);
+          const inventoryData = await inventoryResponse.json().catch(() => []);
+          setInventoryAlerts(inventoryData || []);
+        } else {
+          console.error('inventory-alerts fetch failed', inventoryResponse.status);
         }
 
         // Fetch daily summary
-        const dailyResponse = await fetch(`${API_URL}/analytics/daily-summary`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const dailyResponse = await fetch(`${API_URL}/analytics/daily-summary`, { headers });
         if (dailyResponse.ok) {
-          const dailyData = await dailyResponse.json();
-          setDailySummary(dailyData);
+          const dailyData = await dailyResponse.json().catch(() => []);
+          setDailySummary(dailyData || []);
+        } else {
+          console.error('daily-summary fetch failed', dailyResponse.status);
         }
 
       } catch (error) {
@@ -117,14 +110,12 @@ export default function AnalyticsPage() {
   }, [router]);
 
   const handleExportExcel = async (type: string) => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
+    const headers = authAPI.getAuthHeaders();
+    if (!headers.Authorization) return;
 
     try {
       const response = await fetch(`${API_URL}/analytics/export-excel?type=${type}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
       });
 
       if (response.ok) {

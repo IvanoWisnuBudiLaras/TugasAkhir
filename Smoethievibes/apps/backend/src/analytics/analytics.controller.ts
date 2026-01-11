@@ -15,7 +15,12 @@ export class AnalyticsController {
     description: 'Popular products retrieved successfully',
   })
   async getPopularProducts(@Query('limit') limit?: number) {
-    return this.analyticsService.getPopularProducts(limit || 10);
+    try {
+      return await this.analyticsService.getPopularProducts(limit || 10);
+    } catch (err) {
+      console.error('Error fetching popular products:', err);
+      return [];
+    }
   }
 
   @Get('customers')
@@ -25,7 +30,12 @@ export class AnalyticsController {
     description: 'Customer analytics retrieved successfully',
   })
   async getCustomerAnalytics(@Query('limit') limit?: number) {
-    return this.analyticsService.getCustomerAnalytics(limit || 10);
+    try {
+      return await this.analyticsService.getCustomerAnalytics(limit || 10);
+    } catch (err) {
+      console.error('Error fetching customer analytics:', err);
+      return [];
+    }
   }
 
   @Get('inventory-alerts')
@@ -35,7 +45,12 @@ export class AnalyticsController {
     description: 'Inventory alerts retrieved successfully',
   })
   async getInventoryAlerts() {
-    return this.analyticsService.getInventoryAlerts();
+    try {
+      return await this.analyticsService.getInventoryAlerts();
+    } catch (err) {
+      console.error('Error fetching inventory alerts:', err);
+      return [];
+    }
   }
 
   @Get('daily-summary')
@@ -45,10 +60,17 @@ export class AnalyticsController {
     description: 'Daily summary retrieved successfully',
   })
   async getDailySummary(
-    @Query('startDate') startDate?: Date,
-    @Query('endDate') endDate?: Date,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
   ) {
-    return this.analyticsService.getDailySummary(startDate, endDate);
+    try {
+      const s = startDate ? new Date(startDate) : undefined;
+      const e = endDate ? new Date(endDate) : undefined;
+      return await this.analyticsService.getDailySummary(s, e);
+    } catch (err) {
+      console.error('Error fetching daily summary:', err);
+      return [];
+    }
   }
 
   @Get('dashboard-stats')
@@ -82,15 +104,38 @@ export class AnalyticsController {
     description: 'Excel file generated successfully',
   })
   async exportToExcel(
-    @Query('type') type: 'popular-products' | 'customers' | 'inventory' | 'daily-summary' | 'dashboard',
+    @Query('type') type: string,
     @Res() res: Response,
-    @Query('startDate') startDate?: Date,
-    @Query('endDate') endDate?: Date,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
   ) {
-    const buffer = await this.analyticsService.exportToExcel(type, startDate, endDate);
-    
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=analytics-${type}-${new Date().toISOString().split('T')[0]}.xlsx`);
-    res.send(buffer);
+    try {
+      const allowed = ['popular-products','customers','inventory','daily-summary','dashboard'];
+      const t = allowed.includes(type) ? (type as any) : 'dashboard';
+      const s = startDate ? new Date(startDate) : undefined;
+      const e = endDate ? new Date(endDate) : undefined;
+
+      const buffer = await this.analyticsService.exportToExcel(t, s, e);
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=analytics-${t}-${new Date().toISOString().split('T')[0]}.xlsx`);
+      return res.send(buffer);
+    } catch (err) {
+      console.error('Export to Excel failed:', err);
+      // Fall back to empty workbook with a single sheet so frontend still receives a file
+      try {
+        const ExcelJS = await import('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Empty');
+        sheet.addRow(['No data available or export failed']);
+        const buf = await workbook.xlsx.writeBuffer();
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=analytics-empty-${new Date().toISOString().split('T')[0]}.xlsx`);
+        return res.send(Buffer.from(buf));
+      } catch (e) {
+        console.error('Failed to generate fallback workbook:', e);
+        return res.status(500).json({ message: 'Export failed' });
+      }
+    }
   }
 }

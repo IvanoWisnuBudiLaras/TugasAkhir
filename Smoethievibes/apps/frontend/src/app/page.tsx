@@ -12,7 +12,7 @@ export default function Home() {
       {/* @ui HERO SECTION: background image + text overlay */}
       <section className="relative w-full h-[680px]">
         <Image
-          src="/Landing/kasir1.jpg"
+          src="https://res.cloudinary.com/dogx3ps3r/image/upload/v1765320849/IMG_20251115_090049_dkhyle.jpg"
           alt="UMKM Kudus"
           fill
           priority

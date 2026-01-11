@@ -15,7 +15,7 @@ export function useAuth() {
     const checkAuth = () => {
       try {
         // Cek token di localStorage
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("access_token") || localStorage.getItem("token");
         const userData = localStorage.getItem("user");
         
         console.log("useAuth checkAuth - token:", !!token, "userData:", !!userData);

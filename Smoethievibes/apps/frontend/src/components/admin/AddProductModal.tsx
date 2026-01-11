@@ -46,27 +46,37 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
     setCategoriesError(null);
     
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${API_URL}/products/categories`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      // Backend exposes categories at /categories
+      const response = await fetch(`${API_URL}/categories`, { headers });
+
+      if (response.status === 401) {
+        // unauthorized: clear token and notify app
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('token');
+        window.dispatchEvent(new Event('auth-change'));
+        setCategories([]);
+        setCategoriesError('Unauthorized. Silakan login kembali.');
+        return;
+      }
 
       if (response.ok) {
-        const data = await response.json();
-        setCategories(data);
+        const json = await response.json();
+        const raw = Array.isArray(json) ? json : (json.data || json.categories || []);
+        if (Array.isArray(raw)) setCategories(raw as Category[]);
+        else setCategories([]);
       } else if (response.status === 404) {
-        // Jika kategori tidak ditemukan, gunakan kategori default
-        console.warn("Categories not found, using default categories");
-        setCategoriesError("Kategori tidak ditemukan, silakan tambahkan kategori terlebih dahulu");
+        setCategoriesError('Kategori tidak ditemukan, silakan tambahkan kategori terlebih dahulu');
         setCategories([]);
       } else {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
     } catch (error) {
       console.error("Error fetching categories:", error);
-      setCategoriesError("Gagal memuat kategori, silakan tambahkan kategori terlebih dahulu");
+      setCategoriesError("Gagal memuat kategori, silakan coba lagi atau tambahkan kategori terlebih dahulu");
       setCategories([]);
     } finally {
       setCategoriesLoading(false);
@@ -176,7 +186,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("access_token") || localStorage.getItem("token");
       const response = await fetch(`${API_URL}/products`, {
         method: "POST",
         headers: {

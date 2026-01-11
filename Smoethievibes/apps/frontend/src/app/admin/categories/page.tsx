@@ -2,9 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, AlertCircle } from "lucide-react"; // Tambah AlertCircle
 import AddCategoryModal from "@/components/admin/AddCategoryModal";
 import EditCategoryModal from "@/components/admin/EditCategoryModal";
+
+// Pastikan API_URL benar. Jika menggunakan proxy atau route group, sesuaikan path-nya.
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 interface Category {
   id: string;
@@ -17,19 +20,27 @@ export default function CategoriesPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null); // State untuk pesan error di UI
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
   const fetchCategories = useCallback(async () => {
-    const token = localStorage.getItem("token");
+    // Gunakan "access_token" sesuai dengan yang ada di AuthContext Anda
+    const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+    
     if (!token) {
       router.push("/Auth");
       return;
     }
 
     try {
-      const response = await fetch('/api/categories', {
+      setLoading(true);
+      setErrorMsg(null);
+
+      // PERBAIKAN: Cek apakah backend Anda pakai prefix /api atau tidak. 
+      // Jika 404, kemungkinan besar harusnya `${API_URL}/categories`
+      const response = await fetch(`${API_URL}/categories`, { 
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -37,64 +48,29 @@ export default function CategoriesPage() {
       });
 
       if (response.ok) {
-        const text = await response.text();
-        if (!text) {
-          console.warn("Empty response received");
-          setCategories([]);
-          return;
+        const data = await response.json();
+        
+        // Handle jika data dibungkus dalam properti .data (seperti standar API kamu sebelumnya)
+        const rawData = Array.isArray(data) ? data : (data.data || []);
+
+        if (Array.isArray(rawData)) {
+          const mappedData = rawData.map((item: any) => ({
+            id: item.id || item._id,
+            name: item.name || "Tanpa Nama",
+            description: item.description || "-",
+            createdAt: item.createdAt || item.created_at || null,
+          }));
+          setCategories(mappedData);
         }
-        try {
-          const data = JSON.parse(text);
-          // Validasi struktur data kategori
-          if (Array.isArray(data)) {
-            const validCategories = data.map((cat: unknown) => {
-              const category = cat as Record<string, unknown>;
-              return {
-                id: (category.id || category._id || '') as string,
-                name: (category.name || 'Unnamed Category') as string,
-                description: (category.description || '') as string,
-                createdAt: (category.createdAt || category.created_at || null) as string | null
-              };
-            }).filter((cat) => cat.id && cat.name);
-            setCategories(validCategories);
-          } else {
-            console.warn("Invalid data format: expected array");
-            setCategories([]);
-          }
-        } catch (parseError) {
-          console.error("Failed to parse JSON response:", text);
-          console.error("Parse error details:", parseError);
-          setCategories([]);
-        }
-      } else if (response.status === 403) {
-        console.error("Access denied: Insufficient permissions to view categories");
-        router.push("/unauthorized");
-      } else if (response.status === 401) {
-        console.error("Authentication required: Token may be expired");
-        localStorage.removeItem("token");
-        router.push("/Auth");
       } else {
-        console.error(`Failed to fetch categories: HTTP ${response.status} - ${response.statusText}`);
-        let errorData = { message: 'Unknown error' };
-        let errorText = '';
-        try {
-          errorText = await response.text();
-          if (errorText) {
-            errorData = JSON.parse(errorText);
-          }
-        } catch (parseError) {
-          console.error("Failed to parse error response:", parseError);
-          errorData = { message: errorText || 'Failed to fetch categories' };
-        }
-        console.error('Error details:', errorData);
-        setCategories([]);
+        const errorText = await response.text();
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
-    } catch (error) {
-      console.error("Network error fetching categories:", error);
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        console.error("Possible CORS or network connectivity issue");
-      }
-      setCategories([]);
+    } catch (error: any) {
+      console.error("Fetch Error:", error);
+      setErrorMsg(error.message === "Failed to fetch" 
+        ? "Tidak dapat terhubung ke server. Pastikan Backend menyala." 
+        : error.message);
     } finally {
       setLoading(false);
     }
@@ -102,153 +78,109 @@ export default function CategoriesPage() {
 
   useEffect(() => {
     fetchCategories();
-  }, [router, fetchCategories]);
+  }, [fetchCategories]);
 
-  const handleCategoryAdded = () => {
-    fetchCategories();
-  };
-
-  const handleCategoryUpdated = () => {
-    fetchCategories();
-  };
-
-  const handleEdit = (category: Category) => {
-    setSelectedCategory(category);
-    setIsEditModalOpen(true);
-  };
-
-  const handleDelete = async (categoryId: string) => {
-    if (!confirm("Are you sure you want to delete this category?")) {
-      return;
-    }
-
-    const token = localStorage.getItem("token");
+  // Handler Delete
+  const handleDelete = async (id: string) => {
+    if (!confirm("Hapus kategori ini?")) return;
+    
+    const token = localStorage.getItem("access_token") || localStorage.getItem("token");
     try {
-      const response = await fetch(`/api/categories/${categoryId}`, {
+      const res = await fetch(`${API_URL}/categories/${id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` }
       });
-
-      if (response.ok) {
-        alert("Category deleted successfully!");
-        fetchCategories();
+      if (res.ok) {
+        setCategories(prev => prev.filter(c => c.id !== id));
       } else {
-        let errorMessage = "Failed to delete category";
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch {
-          const errorText = await response.text();
-          console.error("Delete error response:", errorText);
-        }
-        alert(`Error: ${errorMessage}`);
+        alert("Gagal menghapus kategori");
       }
-    } catch (error) {
-      console.error("Error deleting category:", error);
-      alert("Network error. Please try again.");
+    } catch (err) {
+      alert("Terjadi kesalahan jaringan");
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-semibold tracking-tight">Categories</h2>
+        <h2 className="text-2xl font-bold text-gray-800">Manajemen Kategori</h2>
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all"
         >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Category
+          <Plus size={18} /> Tambah Kategori
         </button>
       </div>
 
-      {loading ? (
-        <p className="text-gray-500">Loading categories...</p>
-      ) : categories.length === 0 ? (
-        <p className="text-gray-500">No categories found.</p>
-      ) : (
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created At
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {categories.map((category) => (
-                  <tr key={category.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {category.name}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {category.description || "-"}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {category.createdAt 
-                          ? new Date(category.createdAt).toLocaleDateString()
-                          : "Not available"}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleEdit(category)}
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
-                        >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(category.id)}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center"
-                        >
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      {/* ERROR MESSAGE UI */}
+      {errorMsg && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 flex items-center gap-3 text-red-700">
+          <AlertCircle size={20} />
+          <p>{errorMsg}</p>
+          <button onClick={() => fetchCategories()} className="underline ml-auto font-bold">Coba Lagi</button>
         </div>
       )}
 
-      <AddCategoryModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onCategoryAdded={handleCategoryAdded}
-      />
+      {loading ? (
+        <div className="flex justify-center py-10">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+        </div>
+      ) : categories.length === 0 ? (
+        <div className="text-center py-10 bg-gray-50 rounded-xl border-2 border-dashed">
+          <p className="text-gray-500">Belum ada kategori tersedia.</p>
+        </div>
+      ) : (
+        <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-gray-50 text-gray-600 uppercase text-xs font-semibold">
+              <tr>
+                <th className="px-6 py-4">Nama Kategori</th>
+                <th className="px-6 py-4">Deskripsi</th>
+                <th className="px-6 py-4">Dibuat Pada</th>
+                <th className="px-6 py-4 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {categories.map((category) => (
+                <tr key={category.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-medium text-gray-900">{category.name}</td>
+                  <td className="px-6 py-4 text-gray-500 truncate max-w-[200px]">{category.description}</td>
+                  <td className="px-6 py-4 text-gray-500 text-sm">
+                    {category.createdAt ? new Date(category.createdAt).toLocaleDateString('id-ID') : '-'}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex justify-center gap-3">
+                      <button 
+                        onClick={() => { setSelectedCategory(category); setIsEditModalOpen(true); }}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                      >
+                        <Edit size={18} />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(category.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-      <EditCategoryModal
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setSelectedCategory(null);
-        }}
-        category={selectedCategory}
-        onCategoryUpdated={handleCategoryUpdated}
-      />
+      {/* Modal tetap sama */}
+      <AddCategoryModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onCategoryAdded={fetchCategories} />
+      {selectedCategory && (
+        <EditCategoryModal 
+          isOpen={isEditModalOpen} 
+          onClose={() => { setIsEditModalOpen(false); setSelectedCategory(null); }} 
+          category={selectedCategory} 
+          onCategoryUpdated={fetchCategories} 
+        />
+      )}
     </div>
   );
 }
