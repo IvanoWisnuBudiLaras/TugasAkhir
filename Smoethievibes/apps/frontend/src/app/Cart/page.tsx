@@ -1,210 +1,214 @@
 "use client";
+
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Trash2, Minus, Plus, ShoppingCart, ArrowRight, CheckCircle } from 'lucide-react';
+import { Trash2, Minus, Plus, ShoppingCart, ArrowRight, CheckCircle, AlertCircle, MapPin, Utensils, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/app/Context/CartContext';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/context/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CartPage() {
-    const { items: cartItems, removeItem, updateQuantity } = useCart();
-    const { isAuthenticated } = useAuth();
+    const { items: cartItems, removeItem, updateQuantity, clearCart } = useCart();
+    const { isAuthenticated, user } = useAuth();
     const router = useRouter();
     
-    // State untuk notifikasi setelah checkout (mengganti alert)
-    const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [checkoutMessage, setCheckoutMessage] = useState<{text: string, type: 'success' | 'error'} | null>(null);
 
-    // Nomor WA tujuan (Ganti dengan nomor WA Anda, format internasional tanpa '+')
-    // Contoh: 6281234567890
+    // --- State Baru untuk Sinkronisasi OrderType ---
+    const [orderType, setOrderType] = useState<'TAKEAWAY' | 'DINE_IN' | 'DELIVERY'>('TAKEAWAY');
+    const [tableNumber, setTableNumber] = useState('');
+
+    const API_URL = "http://localhost:3001";
     const whatsappNumber = '6285749252364'; 
 
-    // Total Harga Otomatis
     const cartTotal = useMemo(() => {
         return cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
     }, [cartItems]);
 
-    // Fungsi untuk membuat teks pesanan otomatis
-    const createOrderMessage = () => {
-        let message = `*Konfirmasi Pesanan Baru*\n\nHalo, saya ingin memesan menu-menu berikut:\n\n`;
-
-        cartItems.forEach((item, index) => {
-            message += `*${index + 1}. ${item.name}* (x${item.quantity})\n`;
-            message += `     Harga Satuan: Rp ${item.price.toLocaleString('id-ID')}\n`;
-            message += `     Subtotal: Rp ${(item.price * item.quantity).toLocaleString('id-ID')}\n`;
-            message += `------------------------------\n`;
-        });
-
-        message += `\n*TOTAL PEMBAYARAN: Rp ${cartTotal.toLocaleString('id-ID')}*`;
-        message += `\n\nMohon konfirmasi ketersediaan dan proses pesanan saya. Terima kasih!`;
-        return message;
-    };
-
-
-    // Handler Checkout (Mengalihkan ke WhatsApp)
-    const handleCheckout = () => {
-        if (cartItems.length > 0) {
-            const message = createOrderMessage();
-            
-            // 1. Enkode pesan agar aman untuk URL
-            const encodedMessage = encodeURIComponent(message);
-            
-            // 2. Buat URL WA
-            const waUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
-
-            // 3. Buka link di tab baru
-            window.open(waUrl, '_blank');
-            
-            // 4. Berikan notifikasi di UI
-            setCheckoutMessage("Anda dialihkan ke WhatsApp untuk menyelesaikan pesanan.");
-            
-            // Di lingkungan nyata, di sini Anda akan memanggil fungsi clearCart() setelah pesanan berhasil terkirim.
-        } else {
-            setCheckoutMessage("Keranjang Anda kosong. Silakan tambahkan menu terlebih dahulu.");
+    const handleCheckout = async () => {
+        // 1. Validasi Auth
+        if (!isAuthenticated) {
+            setCheckoutMessage({ text: "Silakan login terlebih dahulu.", type: 'error' });
+            setTimeout(() => router.push('/Auth'), 2000);
+            return;
         }
-        
-        // Atur agar notifikasi hilang setelah beberapa detik
-        setTimeout(() => setCheckoutMessage(null), 5000);
+
+        // 2. Validasi Input Meja jika Dine In
+        if (orderType === 'DINE_IN' && !tableNumber) {
+            setCheckoutMessage({ text: "Mohon isi nomor meja Anda.", type: 'error' });
+            return;
+        }
+
+        if (cartItems.length === 0) return;
+
+        setIsLoading(true);
+        const token = localStorage.getItem('access_token');
+
+        try {
+            // 3. Persiapkan Payload sesuai Schema Backend
+            const payload = {
+                orderItems: cartItems.map(item => ({
+                    productId: isNaN(Number(item.id)) ? item.id : Number(item.id),
+                    quantity: Number(item.quantity),
+                    price: Number(item.price)
+                })),
+                status: "PENDING",
+                orderType: orderType, // Mengirim pilihan user (DINE_IN/TAKEAWAY/DELIVERY)
+                tableNumber: orderType === 'DINE_IN' ? Number(tableNumber) : null, // Kirim meja hanya jika Dine In
+                userId: user?.id 
+            };
+
+            // 4. Hit API Backend
+            const response = await fetch(`${API_URL}/orders`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || "Gagal menyimpan pesanan.");
+            }
+
+            // 5. Format Pesanan untuk WhatsApp (Lebih Detail)
+            const detailMeja = orderType === 'DINE_IN' ? `\nNomor Meja: *${tableNumber}*` : '';
+            const message = `Halo Admin, saya *${user?.name}*.\n\n` + 
+                `Saya ingin konfirmasi pesanan *${orderType}*.\n` +
+                `Order ID: #${result.id.slice(-6).toUpperCase()}` +
+                `${detailMeja}\n\n` +
+                `*Detail Menu:*\n` + 
+                cartItems.map(i => `- ${i.name} (${i.quantity}x)`).join("\n") + 
+                `\n\nTotal Bayar: *Rp ${cartTotal.toLocaleString('id-ID')}*`;
+            
+            window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
+            
+            // 6. Feedback & Cleanup
+            setCheckoutMessage({ text: "Pesanan Berhasil! Menuju Profil...", type: 'success' });
+
+            setTimeout(() => {
+                clearCart();
+                setCheckoutMessage(null);
+                router.push('/Profile'); 
+            }, 2500);
+
+        } catch (error: any) {
+            setCheckoutMessage({ text: error.message, type: 'error' });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    if (cartItems.length === 0) {
+    if (cartItems.length === 0 && !checkoutMessage) {
         return (
-            <div className="min-h-screen pt-24 pb-12 flex flex-col items-center justify-center bg-gray-50">
-                <ShoppingCart size={64} className="text-gray-400 mb-6" />
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">Keranjang Anda Kosong</h1>
-                <p className="text-gray-600 mb-8">Saatnya mengisi keranjang dengan menu sehat!</p>
-                <Link 
-                    href="/Kategori"
-                    className="flex items-center gap-2 bg-green-600 text-white font-semibold px-6 py-3 rounded-full hover:bg-green-700 transition shadow-lg"
-                >
-                    Lihat Semua Menu
-                </Link>
+            <div className="min-h-screen pt-24 pb-12 flex flex-col items-center justify-center bg-gray-50 px-4">
+                <ShoppingCart size={80} className="text-gray-200 mb-6" />
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">Keranjang Kosong</h2>
+                <Link href="/Kategori" className="bg-green-600 text-white px-10 py-3 rounded-full font-bold hover:bg-green-700 transition">Mulai Belanja</Link>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen pt-24 pb-12 bg-gray-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                
-                {/* Custom Notifikasi (Menggantikan alert) */}
+        <div className="min-h-screen pt-28 pb-12 bg-gray-50">
+            <div className="max-w-6xl mx-auto px-4">
                 {checkoutMessage && (
-                    <div className={`p-4 mb-6 rounded-lg shadow-md flex items-center gap-3 
-                                    ${checkoutMessage.startsWith('Anda dialihkan') ? 'bg-blue-100 text-blue-700' : 
-                                    checkoutMessage.startsWith('Sukses') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                        <CheckCircle size={20} />
-                        <p className="font-medium">{checkoutMessage}</p>
+                    <div className={`fixed top-24 right-4 z-50 p-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-right-10 ${checkoutMessage.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+                        {checkoutMessage.type === 'success' ? <CheckCircle size={24} /> : <AlertCircle size={24} />}
+                        <p className="font-bold">{checkoutMessage.text}</p>
                     </div>
                 )}
 
-                <h1 className="text-4xl font-extrabold text-gray-900 mb-10 border-b pb-4">
-                    Keranjang Belanja Anda ({cartItems.length} Item)
-                </h1>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                    
-                    {/* Kolom Kiri: Daftar Item */}
+                <h1 className="text-3xl font-extrabold mb-8 text-gray-800 tracking-tight">Keranjang Belanja</h1>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Daftar Item */}
                     <div className="lg:col-span-2 space-y-4">
                         {cartItems.map((item) => (
-                            <div 
-                                key={item.id} 
-                                className="flex items-center bg-white p-4 rounded-xl shadow-md justify-between"
-                            >
-                                <div className="flex items-center gap-4">
-                                    {/* Gambar Produk */}
-                                    <div className="w-16 h-16 relative rounded-lg overflow-hidden flex-shrink-0">
-                                        <Image 
-                                            src={item.img} 
-                                            alt={item.name} 
-                                            fill
-                                            className="object-cover"
-                                        />
-                                    </div>
-                                    
-                                    {/* Detail Produk */}
-                                    <div>
-                                        <h2 className="font-bold text-lg text-gray-900">{item.name}</h2>
-                                        <p className="text-sm text-orange-500 font-semibold">
-                                            Rp {item.price.toLocaleString('id-ID')}
-                                        </p>
-                                    </div>
+                            <div key={item.id} className="bg-white p-4 rounded-3xl flex items-center shadow-sm border border-gray-100">
+                                <div className="w-20 h-20 relative rounded-2xl overflow-hidden bg-gray-100">
+                                    <Image src={item.img || '/placeholder-food.jpg'} alt={item.name} fill className="object-cover" />
                                 </div>
-
-                                <div className="flex items-center gap-4">
-                                    {/* Kontrol Kuantitas */}
-                                    <div className="flex items-center border border-gray-300 rounded-full">
-                                        <button 
-                                            onClick={() => updateQuantity(item.id, -1)}
-                                            className="p-2 text-gray-600 hover:bg-gray-100 rounded-l-full disabled:opacity-50"
-                                            aria-label="Kurangi kuantitas"
-                                            disabled={item.quantity <= 1}
-                                        >
-                                            <Minus size={18} />
-                                        </button>
-                                        <span className="px-3 font-semibold text-gray-800">{item.quantity}</span>
-                                        <button 
-                                            onClick={() => updateQuantity(item.id, 1)}
-                                            className="p-2 text-gray-600 hover:bg-gray-100 rounded-r-full"
-                                            aria-label="Tambah kuantitas"
-                                        >
-                                            <Plus size={18} />
-                                        </button>
+                                <div className="ml-4 flex-grow">
+                                    <h3 className="font-bold text-gray-800">{item.name}</h3>
+                                    <p className="text-green-600 font-black text-sm">Rp {item.price.toLocaleString('id-ID')}</p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="flex items-center bg-gray-100 rounded-xl p-1">
+                                        <button onClick={() => updateQuantity(item.id, -1)} className="p-1.5 hover:text-red-500" disabled={item.quantity <= 1}><Minus size={14}/></button>
+                                        <span className="w-8 text-center font-bold text-sm">{item.quantity}</span>
+                                        <button onClick={() => updateQuantity(item.id, 1)} className="p-1.5 hover:text-green-600"><Plus size={14}/></button>
                                     </div>
-
-                                    {/* Total Harga Per Item */}
-                                    <p className="font-bold text-lg w-20 text-right text-gray-900 hidden sm:block">
-                                        Rp {(item.price * item.quantity).toLocaleString('id-ID')}
-                                    </p>
-
-                                    {/* Tombol Hapus */}
-                                    <button 
-                                        onClick={() => removeItem(item.id)}
-                                        className="p-2 text-red-500 hover:bg-red-50 rounded-full"
-                                        aria-label="Hapus item"
-                                    >
-                                        <Trash2 size={20} />
-                                    </button>
+                                    <button onClick={() => removeItem(item.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={20}/></button>
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    {/* Kolom Kanan: Ringkasan & Checkout */}
-                    <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-xl sticky top-28 h-fit">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-5 border-b pb-3">
-                            Ringkasan Pesanan
-                        </h2>
-                        
-                        {/* Detail Biaya */}
-                        <div className="space-y-3 text-gray-700 mb-6">
-                            <div className="flex justify-between">
-                                <span>Subtotal ({cartItems.length} jenis item)</span>
-                                <span>Rp {cartTotal.toLocaleString('id-ID')}</span>
+                    {/* Sidebar Checkout */}
+                    <div className="lg:col-span-1 space-y-6">
+                        {/* --- Selector Order Type --- */}
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                            <h3 className="text-xs font-black text-gray-400 uppercase mb-4 tracking-widest">Metode Pesanan</h3>
+                            <div className="grid grid-cols-3 gap-2">
+                                {[
+                                    { id: 'DINE_IN', label: 'Makan', icon: <Utensils size={14}/> },
+                                    { id: 'TAKEAWAY', label: 'Bawa', icon: <ShoppingBag size={14}/> },
+                                    { id: 'DELIVERY', label: 'Antar', icon: <MapPin size={14}/> }
+                                ].map((type) => (
+                                    <button
+                                        key={type.id}
+                                        onClick={() => setOrderType(type.id as any)}
+                                        className={`flex flex-col items-center gap-1 py-3 rounded-2xl text-[10px] font-bold transition-all border-2 ${orderType === type.id ? 'bg-green-600 border-green-600 text-white shadow-lg shadow-green-100' : 'bg-gray-50 border-transparent text-gray-500 hover:bg-white hover:border-green-200'}`}
+                                    >
+                                        {type.icon}
+                                        {type.label}
+                                    </button>
+                                ))}
                             </div>
-                            <div className="flex justify-between">
-                                <span>Biaya Pengiriman</span>
-                                <span className="text-green-600 font-semibold">Gratis</span> 
-                            </div>
-                            <div className="flex justify-between pt-3 border-t-2 border-green-100">
-                                <span className="text-xl font-bold">Total Pembayaran</span>
-                                <span className="text-2xl font-extrabold text-orange-500">
-                                    Rp {cartTotal.toLocaleString('id-ID')}
-                                </span>
-                            </div>
+
+                            {/* Input Nomor Meja Khusus Dine In */}
+                            <AnimatePresence>
+                                {orderType === 'DINE_IN' && (
+                                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="mt-4 pt-4 border-t border-dashed">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1">Nomor Meja</label>
+                                        <input 
+                                            type="number" 
+                                            placeholder="Contoh: 08" 
+                                            value={tableNumber}
+                                            onChange={(e) => setTableNumber(e.target.value)}
+                                            className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-green-500 outline-none text-sm font-black"
+                                        />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
 
-                        {/* Tombol Checkout (Sekarang mengarah ke WA) */}
-                        <button 
-                            onClick={handleCheckout}
-                            className="w-full flex items-center justify-center gap-2 bg-green-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-green-700 transition shadow-lg text-lg"
-                        >
-                            Pesan via WhatsApp
-                            <ArrowRight size={20} />
-                        </button>
-                        
-                        <p className="text-center text-xs text-gray-500 mt-4">
-                            Anda akan diarahkan ke WhatsApp untuk konfirmasi pesanan.
-                        </p>
-                    </div>
+                        {/* Ringkasan Total */}
+                        <div className="bg-white p-6 rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 sticky top-32">
+                            <h3 className="text-lg font-bold mb-4 text-gray-800">Ringkasan</h3>
+                            <div className="space-y-3 mb-6">
+                                <div className="flex justify-between text-sm text-gray-500 font-medium">
+                                    <span>Subtotal</span>
+                                    <span>Rp {cartTotal.toLocaleString('id-ID')}</span>
+                                </div>
+                                <div className="flex justify-between font-black text-xl pt-4 border-t">
+                                    <span className="text-gray-800">Total</span>
+                                    <span className="text-green-600">Rp {cartTotal.toLocaleString('id-ID')}</span>
+                                </div>
+                            </div>
 
+                            <button onClick={handleCheckout} disabled={isLoading} className={`w-full py-4 rounded-2xl font-black flex items-center justify-center gap-3 text-white transition-all active:scale-95 ${isLoading ? 'bg-gray-300' : 'bg-green-600 hover:bg-green-700 shadow-lg shadow-green-200'}`}>
+                                {isLoading ? <span className="animate-pulse">Memproses...</span> : <>Konfirmasi Pesanan <ArrowRight size={20}/></>}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
