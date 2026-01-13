@@ -30,7 +30,7 @@ export default function Nav() {
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [categories, setCategories] = useState<{ name: string; href: string }[]>([
-        { name: "Semua Menu", href: "/Kategori" },
+        { name: "Semua Menu", href: "/Kategori/semua" },
     ]);
 
     // Check Admin status berdasarkan data user dari context
@@ -83,7 +83,7 @@ export default function Nav() {
                         {/* DROPDOWN KATEGORI */}
                         <li className="relative" onMouseEnter={() => setIsCategoryOpen(true)} onMouseLeave={() => setIsCategoryOpen(false)}>
                             <button className="flex items-center gap-1 hover:text-green-600 transition focus:outline-none">
-                                Kategori
+                                <Link href="/Kategori">Kategori</Link>
                                 <ChevronDown size={16} className={`transform transition-transform ${isCategoryOpen ? 'rotate-180' : 'rotate-0'}`} />
                             </button>
                             {isCategoryOpen && (
@@ -155,7 +155,7 @@ export default function Nav() {
             <nav className={`fixed top-[60px] left-0 h-screen w-full z-40 bg-white/95 backdrop-blur-sm p-8 md:hidden transform transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 <ul className="flex flex-col gap-6 text-xl font-semibold text-gray-700">
                     <li onClick={closeMobileMenu} className="border-b pb-3"><Link href="/">Home</Link></li>
-                    <li className="font-bold text-lg text-green-600 pt-2">Kategori</li>
+                    <li className="font-bold text-lg text-green-600 pt-2"><Link href="/Kategori">Kategori</Link></li>
                     {categories.map((item) => (
                          <li key={item.name} onClick={closeMobileMenu} className="pl-4 text-gray-600 border-b pb-3">
                              <Link href={item.href}>{item.name}</Link>

@@ -6,7 +6,6 @@ import Link from 'next/link';
 interface Category {
   id: string;
   name: string;
-  slug: string;
   description?: string;
 }
 
@@ -27,9 +26,9 @@ export default function CategoryList() {
       } catch (error) {
         console.error('REST Error, using fallback:', error);
         setCategories([
-          { id: '1', name: 'Makanan', slug: 'makanan', description: 'Menu makanan sehat' },
-          { id: '2', name: 'Smoothie', slug: 'smoothie', description: 'Minuman buah segar' },
-          { id: '3', name: 'Minuman', slug: 'minuman', description: 'Minuman sehat lainnya' },
+          { id: '1', name: 'Makanan', description: 'Menu makanan sehat' },
+          { id: '2', name: 'Smoothie', description: 'Minuman buah segar' },
+          { id: '3', name: 'Minuman', description: 'Minuman sehat lainnya' },
         ]);
       } finally {
         setLoading(false);
@@ -51,7 +50,7 @@ export default function CategoryList() {
         </Link>
 
         {categories.map((cat) => (
-          <Link key={cat.id} href={`/Kategori/${cat.slug}`} className="bg-white p-6 rounded-xl shadow-md border hover:shadow-xl transition group">
+          <Link key={cat.id} href={`/Kategori/${cat.name}`} className="bg-white p-6 rounded-xl shadow-md border hover:shadow-xl transition group">
             <h3 className="text-xl font-bold text-gray-900 group-hover:text-green-600">{cat.name}</h3>
             <p className="text-gray-500 text-sm">{cat.description}</p>
           </Link>

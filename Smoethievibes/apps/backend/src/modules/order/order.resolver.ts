@@ -1,18 +1,19 @@
-import { Resolver, Query, Mutation, Args, Int, Subscription } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, Subscription } from '@nestjs/graphql';
 import { OrderService } from './order.service';
 import { Order } from './order.model';
-import { OrderItem } from './order-item.model';
 import { CreateOrderInput } from './dto/create-order.input';
 import { UpdateOrderInput } from './dto/update-order.input';
-import { AddOrderItemInput } from './dto/order-item.input';
 import { OrderResponse, OrderItemResponse } from './dto/order-response.type';
 import { OrderSubscriptionService } from './order-subscription.service';
+
 @Resolver(() => Order)
 export class OrderResolver {
   constructor(
     private readonly orderService: OrderService,
     private readonly subscriptionService: OrderSubscriptionService
   ) {}
+
+  // --- MUTATIONS ---
 
   @Mutation(() => OrderResponse)
   async createOrder(@Args('createOrderInput') createOrderInput: CreateOrderInput) {
@@ -23,56 +24,11 @@ export class OrderResolver {
         message: 'Order berhasil dibuat',
         order
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Terjadi kesalahan sistem';
       return {
         success: false,
-        message: (error as Error).message,
-        order: null
-      };
-    }
-  }
-
-  @Subscription(() => Order)
-  orderCreated() {
-    return this.subscriptionService.getPubSub().asyncIterableIterator('orderCreated');
-  }
-
-  @Subscription(() => Order)
-  orderUpdated() {
-    return this.subscriptionService.getPubSub().asyncIterableIterator('orderUpdated');
-  }
-
-  @Mutation(() => OrderItemResponse)
-  async addOrUpdateOrderItem(@Args('input') input: AddOrderItemInput) {
-    try {
-      await this.orderService.addOrUpdateOrderItem(input.orderId, input.productId, input.quantity);
-      return {
-        success: true,
-        message: 'Produk berhasil ditambahkan/diupdate',
-        orderId: input.orderId
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: (error as Error).message,
-        orderId: null
-      };
-    }
-  }
-
-  @Mutation(() => OrderResponse)
-  async removeOrderItem(@Args('orderId') orderId: string, @Args('orderItemId') orderItemId: string) {
-    try {
-      const order = await this.orderService.removeOrderItem(orderId, orderItemId);
-      return {
-        success: true,
-        message: 'Produk berhasil dihapus dari order',
-        order
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: (error as Error).message,
+        message: errorMessage,
         order: null
       };
     }
@@ -81,29 +37,20 @@ export class OrderResolver {
   @Mutation(() => OrderResponse)
   async updateOrderStatus(@Args('id') id: string, @Args('status') status: string) {
     try {
-      const order = await this.orderService.update(id, { status });
+      const order = await this.orderService.updateStatus(id, status);
       return {
         success: true,
         message: 'Status order berhasil diupdate',
         order
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Terjadi kesalahan sistem';
       return {
         success: false,
-        message: (error as Error).message,
+        message: errorMessage,
         order: null
       };
     }
-  }
-
-  @Query(() => [Order], { name: 'orders' })
-  async findAll() {
-    return this.orderService.findAll();
-  }
-
-  @Query(() => Order, { name: 'order' })
-  async findOne(@Args('id') id: string) {
-    return this.orderService.findOne(id);
   }
 
   @Mutation(() => Order)
@@ -119,11 +66,43 @@ export class OrderResolver {
     return this.orderService.remove(id);
   }
 
-  // Additional queries
+  // --- QUERIES ---
+
+  @Query(() => [Order], { name: 'orders' })
+  async findAll() {
+    return this.orderService.findAll();
+  }
+
+  @Query(() => Order, { name: 'order' })
+  async findOne(@Args('id') id: string) {
+    return this.orderService.findOne(id);
+  }
+
   @Query(() => [Order], { name: 'ordersByUser' })
   async findByUser(@Args('userId') userId: string) {
     return this.orderService.findByUser(userId);
   }
 
+  // --- SUBSCRIPTIONS ---
 
+  @Subscription(() => Order, {
+    name: 'orderCreated',
+    resolve: (payload) => payload.orderCreated, // Penting agar data terbaca benar
+  })
+  orderCreated() {
+    return this.subscriptionService.getPubSub().asyncIterableIterator('orderCreated');
+  }
+
+  @Subscription(() => Order, {
+    name: 'orderUpdated',
+    resolve: (payload) => payload.orderUpdated,
+  })
+  orderUpdated() {
+    return this.subscriptionService.getPubSub().asyncIterableIterator('orderUpdated');
+  }
+
+  // --- CATATAN PENTING ---
+  // Fungsi addOrUpdateOrderItem dan removeOrderItem sementara saya hapus 
+  // karena di OrderService yang kita perbaiki tadi tidak ada fungsi manual per item.
+  // Order biasanya dibuat sekaligus (Bulk) lewat createOrder.
 }

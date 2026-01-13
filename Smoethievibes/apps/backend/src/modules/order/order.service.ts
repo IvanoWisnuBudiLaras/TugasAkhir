@@ -1,8 +1,9 @@
 import { Injectable, Inject, BadRequestException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OrderSubscriptionService } from './order-subscription.service';
 import Redis from 'ioredis';
+import { string } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class OrderService {
@@ -11,32 +12,103 @@ export class OrderService {
   constructor(
     private prisma: PrismaService,
     private subscriptionService: OrderSubscriptionService,
-    @Inject(ConfigService)
-    private configService: ConfigService,
     @Inject('REDIS_CLIENT')
     private redisClient: Redis,
   ) {}
+
+  // --- PRIVATE HELPERS ---
 
   private getCacheKey(prefix: string, id?: string): string {
     return id ? `order:${prefix}:${id}` : `order:${prefix}`;
   }
 
-  private async invalidateOrderCache(orderId?: string) {
-    const keys = orderId 
-      ? [`order:all`, `order:single:${orderId}`, `order:user:*`]
-      : [`order:all`, `order:user:*` ];
+  private async invalidateOrderCache(orderId?: string, userId?: string) {
+    const pipeline = this.redisClient.pipeline();
+    pipeline.del(this.getCacheKey('all'));
+    if (orderId) pipeline.del(this.getCacheKey('single', orderId));
+    if (userId) pipeline.del(this.getCacheKey(`user:${userId}`));
     
-    for (const key of keys) {
-      if (key.includes('*')) {
-        const matchingKeys = await this.redisClient.keys(key);
-        if (matchingKeys.length > 0) {
-          await this.redisClient.del(...matchingKeys);
-        }
-      } else {
-        await this.redisClient.del(key);
-      }
+    // Hapus semua cache list user jika userId tidak spesifik
+    if (!userId) {
+      const keys = await this.redisClient.keys('order:user:*');
+      if (keys.length > 0) pipeline.del(...keys);
     }
+    await pipeline.exec();
   }
+
+  /**
+   * Logika sinkronisasi ke tabel Analytics
+   */
+  private async updateAnalyticsInternal(tx: any, order: any) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 1. User Analytics
+    await tx.userAnalytics.upsert({
+      where: { userId: order.userId },
+      create: {
+        id: uuidv4(), // <--- Memberikan ID manual
+        userId: order.userId,
+        totalOrders: 1,
+        totalSpent: order.total,
+        lastOrderDate: new Date(),
+        firstOrderDate: new Date(),
+        averageOrderValue: order.total,
+        updatedAt: new Date(), // <--- Memberikan updatedAt manual
+      },
+      update: {
+        totalOrders: { increment: 1 },
+        totalSpent: { increment: order.total },
+        lastOrderDate: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+
+    // 2. Product Analytics
+    for (const item of order.orderItems) {
+      await tx.productAnalytics.upsert({
+        where: { productId: item.productId },
+        create: {
+          id: uuidv4(), // <--- Memberikan ID manual
+          productId: item.productId,
+          totalSold: item.quantity,
+          totalRevenue: item.price * item.quantity,
+          lastSoldDate: new Date(),
+          updatedAt: new Date(),
+        },
+        update: {
+          totalSold: { increment: item.quantity },
+          totalRevenue: { increment: item.price * item.quantity },
+          lastSoldDate: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+    }
+
+    // 3. Daily Order Summary
+    await tx.dailyOrderSummary.upsert({
+      where: { date: today },
+      create: {
+        id: uuidv4(), // <--- Memberikan ID manual
+        date: today,
+        totalOrders: 1,
+        totalRevenue: order.total,
+        takeawayOrders: order.orderType === 'TAKEAWAY' ? 1 : 0,
+        dineInOrders: order.orderType === 'DINE_IN' ? 1 : 0,
+        deliveryOrders: order.orderType === 'DELIVERY' ? 1 : 0,
+        updatedAt: new Date(),
+      },
+      update: {
+        totalOrders: { increment: 1 },
+        totalRevenue: { increment: order.total },
+        takeawayOrders: order.orderType === 'TAKEAWAY' ? { increment: 1 } : undefined,
+        dineInOrders: order.orderType === 'DINE_IN' ? { increment: 1 } : undefined,
+        deliveryOrders: order.orderType === 'DELIVERY' ? { increment: 1 } : undefined,
+        updatedAt: new Date(),
+      },
+    });
+  }
+  // --- PUBLIC METHODS ---
 
   async findAll() {
     const cacheKey = this.getCacheKey('all');
@@ -44,11 +116,8 @@ export class OrderService {
     if (cached) return JSON.parse(cached);
 
     const orders = await this.prisma.order.findMany({
-      include: {
-        user: true,
-        orderItems: { include: { product: true } },
-      },
-      orderBy: { createdAt: 'desc' }
+      include: { user: true, orderItems: { include: { product: true } } },
+      orderBy: { createdAt: 'desc' },
     });
 
     await this.redisClient.setex(cacheKey, this.CACHE_TTL, JSON.stringify(orders));
@@ -62,10 +131,7 @@ export class OrderService {
 
     const order = await this.prisma.order.findUnique({
       where: { id },
-      include: {
-        user: true,
-        orderItems: { include: { product: true } },
-      },
+      include: { user: true, orderItems: { include: { product: true } } },
     });
 
     if (!order) throw new NotFoundException(`Order ID ${id} tidak ditemukan`);
@@ -74,110 +140,207 @@ export class OrderService {
   }
 
   async create(orderData: any) {
+    const { orderItems, userId, tableNumber, ...restOfData } = orderData;
+
+    if (!orderItems?.length) throw new BadRequestException('Keranjang belanja kosong');
+
     try {
-      let total = 0;
-      const { orderItems, tableNumber, ...restOfData } = orderData;
+      return await this.prisma.$transaction(async (tx) => {
+        let total = 0;
+        const itemsToCreate = [];
 
-      if (!orderItems || orderItems.length === 0) {
-        throw new BadRequestException('Keranjang belanja tidak boleh kosong');
-      }
+        for (const item of orderItems) {
+          const product = await tx.product.findUnique({ where: { id: item.productId } });
+          if (!product) throw new NotFoundException(`Produk ${item.productId} tidak ditemukan`);
 
-      const productIds = orderItems.map((item: any) => item.productId);
-      if (productIds.length !== [...new Set(productIds)].length) {
-        throw new BadRequestException('Terdapat produk duplikat dalam keranjang');
-      }
+          const qty = Number(item.quantity);
+          if (product.stock < qty) throw new BadRequestException(`Stok ${product.name} tidak cukup`);
 
-      const itemsToCreate = [];
-      for (const item of orderItems) {
-        const pId = isNaN(Number(item.productId)) ? item.productId : Number(item.productId);
-        const product = await this.prisma.product.findUnique({ where: { id: pId } });
+          // POTONG STOK
+          await tx.product.update({
+            where: { id: product.id },
+            data: { stock: { decrement: qty } },
+          });
 
-        if (!product) {
-          throw new NotFoundException(`Produk ID ${item.productId} tidak ditemukan`);
+          total += product.price * qty;
+          itemsToCreate.push({
+            productId: product.id,
+            quantity: qty,
+            price: product.price,
+          });
         }
 
-        total += product.price * item.quantity;
-        itemsToCreate.push({
-          productId: pId,
-          quantity: Number(item.quantity),
-          price: product.price,
+        const order = await tx.order.create({
+          data: {
+            ...restOfData,
+            userId,
+            tableNumber: tableNumber ? Number(tableNumber) : null,
+            total,
+            orderItems: { create: itemsToCreate },
+          },
+          include: { orderItems: true },
         });
-      }
 
-      const order = await this.prisma.order.create({
-        data: {
-          ...restOfData,
-          orderType: restOfData.orderType as any,
-          tableNumber: tableNumber ? Number(tableNumber) : null,
-          total,
-          orderItems: { create: itemsToCreate },
-        },
-        include: {
-          user: true,
-          orderItems: { include: { product: true } },
-        },
+        // UPDATE ANALYTICS
+        await this.updateAnalyticsInternal(tx, order);
+
+        await this.invalidateOrderCache(undefined, userId);
+        await this.subscriptionService.publishOrderCreated(order);
+        return order;
       });
-
-      await this.invalidateOrderCache();
-      await this.subscriptionService.publishOrderCreated(order);
-
-      return order;
-    } catch (error) {
-      if (error instanceof NotFoundException || error instanceof BadRequestException) throw error;
-      throw new InternalServerErrorException('Gagal membuat pesanan');
+    } catch (error: any) {
+      if (error instanceof BadRequestException || error instanceof NotFoundException) throw error;
+      throw new InternalServerErrorException('Gagal membuat pesanan: ' + error.message);
     }
   }
 
   async updateStatus(id: string, status: any) {
-  const order = await this.prisma.order.findUnique({ where: { id } });
-  if (!order) throw new NotFoundException('Order tidak ditemukan');
+    return await this.prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id },
+        include: { orderItems: true },
+      });
+      if (!order) throw new NotFoundException('Order tidak ditemukan');
 
-  const updatedOrder = await this.prisma.order.update({
-    where: { id },
-    data: { status },
-    include: {
-      user: true,
-      orderItems: { include: { product: true } },
-    },
-  });
+      // KEMBALIKAN STOK JIKA CANCEL
+      if (status === 'CANCELLED' && order.status !== 'CANCELLED') {
+        for (const item of order.orderItems) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { increment: item.quantity } },
+          });
+        }
+        
+        // Update Daily Summary (menambah jumlah pembatalan)
+        const orderDate = new Date(order.createdAt);
+        orderDate.setHours(0, 0, 0, 0);
+        await tx.dailyOrderSummary.upsert({
+          where: { date: orderDate },
+          create: { date: orderDate, cancelledOrders: 1 },
+          update: { cancelledOrders: { increment: 1 } },
+        });
+      }
 
-  // WAJIB: Hapus cache agar user melihat status terbaru
-  await this.invalidateOrderCache(id);
-  
-  // Tambahan: Jika Anda menyimpan cache per user, hapus juga
-  if (order.userId) {
-    const userCacheKey = `order:user:${order.userId}`;
-    await this.redisClient.del(userCacheKey);
+      const updatedOrder = await tx.order.update({
+        where: { id },
+        data: { status },
+        include: { user: true, orderItems: { include: { product: true } } },
+      });
+
+      await this.invalidateOrderCache(id, order.userId);
+      return updatedOrder;
+    });
   }
-
-  return updatedOrder;
-}
 
   async update(id: string, orderData: any) {
-    const { orderItems, tableNumber, ...restOfData } = orderData;
+    const { tableNumber, ...restOfData } = orderData;
+    
+    // Cari order untuk memastikan keberadaannya
+    const order = await this.prisma.order.findUnique({ where: { id } });
+    if (!order) throw new NotFoundException('Order tidak ditemukan');
 
-    const updatedOrder = await this.prisma.order.update({
-      where: { id },
-      data: {
-        ...restOfData,
-        orderType: restOfData.orderType?.replace('_', '') as any,
-        tableNumber: tableNumber ? Number(tableNumber) : null,
-      },
-      include: {
-        user: true,
-        orderItems: { include: { product: true } },
-      },
+    try {
+      const updatedOrder = await this.prisma.order.update({
+        where: { id },
+        data: {
+          ...restOfData,
+          tableNumber: tableNumber ? Number(tableNumber) : null,
+        },
+        include: { user: true }
+      });
+
+      // Invalidate cache agar data yang diupdate langsung sinkron
+      await this.invalidateOrderCache(id, updatedOrder.userId);
+      return updatedOrder;
+    } catch (error) {
+      throw new InternalServerErrorException('Gagal memperbarui order');
+    }
+  }
+  async remove(id: string) {
+    return await this.prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id },
+        include: { orderItems: true },
+      });
+      if (!order) throw new NotFoundException('Order tidak ditemukan');
+
+      // BALIKIN STOK JIKA ORDER DIHAPUS SAAT MASIH AKTIF
+      if (order.status !== 'CANCELLED') {
+        for (const item of order.orderItems) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { increment: item.quantity } },
+          });
+        }
+      }
+
+      await tx.orderItem.deleteMany({ where: { orderId: id } });
+      const result = await tx.order.delete({ where: { id } });
+
+      await this.invalidateOrderCache(id, order.userId);
+      return result;
     });
-
-    await this.invalidateOrderCache(id);
-    return updatedOrder;
   }
 
-  async remove(id: string) {
-    await this.prisma.orderItem.deleteMany({ where: { orderId: id } });
-    const result = await this.prisma.order.delete({ where: { id } });
-    await this.invalidateOrderCache(id);
-    return result;
+  async addOrUpdateOrderItem(orderId: string, productId: any, quantity: number) {
+    return await this.prisma.$transaction(async (tx) => {
+      const product = await tx.product.findUnique({ where: { id: productId } });
+      if (!product) throw new NotFoundException('Produk tidak ditemukan');
+
+      if (product.stock < quantity) throw new BadRequestException('Stok tidak mencukupi');
+
+      const existingItem = await tx.orderItem.findFirst({
+        where: { orderId, productId },
+      });
+
+      if (existingItem) {
+        await tx.orderItem.update({
+          where: { id: existingItem.id },
+          data: { quantity: { increment: Number(quantity) } },
+        });
+      } else {
+        await tx.orderItem.create({
+          data: { orderId, productId, quantity: Number(quantity), price: product.price },
+        });
+      }
+
+      // UPDATE STOK & REKALKULASI
+      await tx.product.update({
+        where: { id: productId },
+        data: { stock: { decrement: Number(quantity) } },
+      });
+
+      return await this.recalculateOrderTotalInternal(tx, orderId);
+    });
+  }
+
+  async removeOrderItem(orderId: string, orderItemId: string) {
+    return await this.prisma.$transaction(async (tx) => {
+      const item = await tx.orderItem.findUnique({ where: { id: orderItemId } });
+      if (!item) throw new NotFoundException('Item tidak ditemukan');
+
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { stock: { increment: item.quantity } },
+      });
+
+      await tx.orderItem.delete({ where: { id: orderItemId } });
+      return await this.recalculateOrderTotalInternal(tx, orderId);
+    });
+  }
+
+  private async recalculateOrderTotalInternal(tx: any, orderId: string) {
+    const orderItems = await tx.orderItem.findMany({ where: { orderId } });
+    const total = orderItems.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+
+    const updatedOrder = await tx.order.update({
+      where: { id: orderId },
+      data: { total },
+      include: { user: true, orderItems: { include: { product: true } } },
+    });
+
+    await this.invalidateOrderCache(orderId, updatedOrder.userId);
+    return updatedOrder;
   }
 
   async findByUser(userId: string) {
@@ -187,27 +350,11 @@ export class OrderService {
 
     const orders = await this.prisma.order.findMany({
       where: { userId },
-      include: {
-        orderItems: { include: { product: true } },
-      },
-      orderBy: { createdAt: 'desc' }
+      include: { orderItems: { include: { product: true } } },
+      orderBy: { createdAt: 'desc' },
     });
 
     await this.redisClient.setex(cacheKey, this.CACHE_TTL, JSON.stringify(orders));
     return orders;
-  }
-
-  private async recalculateOrderTotal(orderId: string) {
-    const orderItems = await this.prisma.orderItem.findMany({ where: { orderId } });
-    const total = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-    return this.prisma.order.update({
-      where: { id: orderId },
-      data: { total },
-      include: {
-        user: true,
-        orderItems: { include: { product: true } },
-      },
-    });
   }
 }
