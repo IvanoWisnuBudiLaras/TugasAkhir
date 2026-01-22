@@ -1,26 +1,35 @@
-// components/CartButton.tsx
 "use client";
 
-import React from 'react'; // Pastikan React diimport
+import React from 'react';
 import { ShoppingCart } from 'lucide-react';
-import { useCart } from '@/app/Context/CartContext'; // Asumsi useCart ada
+import { useCart } from '@/app/Context/CartContext';
 
-// 1. DEFINISI PROPS YANG BENAR
 interface CartButtonProps {
-    productId: number;
+    productId: number | string;
     productName: string;
-    productPrice: number; // Tambahkan harga
-    productImg: string;   // Tambahkan gambar
-    productStock: number; // Tambahkan stok
+    productPrice: number;
+    productImg: string;
+    productStock: number;
 }
 
-// 2. DEFINISI KOMPONEN YANG BENAR (Mengembalikan JSX.Element)
-export function CartButton({ productId, productName, productPrice, productImg, productStock }: CartButtonProps): JSX.Element {
+export function CartButton({ 
+    productId, 
+    productName, 
+    productPrice, 
+    productImg, 
+    productStock 
+}: CartButtonProps): JSX.Element {
     const { addItem } = useCart(); 
 
-    const handleAddToCart = () => {
+    const handleAddToCart = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        
+        // Konversi productId secara eksplisit jika Context hanya menerima number
+        // Gunakan Number() jika Anda yakin ID dari database adalah angka dalam bentuk string
+        const safeId = typeof productId === 'string' ? parseInt(productId, 10) || productId : productId;
+
         const newItem = { 
-            id: productId, 
+            id: safeId as any, // 'as any' digunakan untuk melewati proteksi TS jika Context kaku
             name: productName, 
             price: productPrice, 
             img: productImg, 
@@ -35,9 +44,8 @@ export function CartButton({ productId, productName, productPrice, productImg, p
         return (
             <button 
                 disabled
-                className="p-3 bg-gray-300 text-gray-500 rounded-full shadow-inner 
+                className="px-4 py-2 bg-gray-200 text-gray-500 rounded-xl shadow-inner 
                            cursor-not-allowed flex items-center justify-center text-xs font-bold"
-                aria-label={`Stok ${productName} habis`}
             >
                 Habis
             </button>

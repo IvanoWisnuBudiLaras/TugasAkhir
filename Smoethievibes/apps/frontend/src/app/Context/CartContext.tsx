@@ -1,9 +1,7 @@
-// context/CartContext.tsx
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 
-// Tipe data untuk item keranjang
 interface CartItem {
     id: number;
     name: string;
@@ -13,64 +11,72 @@ interface CartItem {
     stock: number;
 }
 
-// Tipe data untuk Context
 interface CartContextType {
     items: CartItem[];
     addItem: (item: CartItem) => void;
     removeItem: (id: number) => void;
     updateQuantity: (id: number, delta: number) => void;
-    totalItems: number; // Jumlah total item (badge count)
+    clearCart: () => void; // Tambahan: Untuk mengosongkan keranjang setelah checkout
+    totalItems: number;
 }
 
-// Default value (digunakan untuk inisialisasi)
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-    // Gunakan state yang sama dari halaman Keranjang Anda
-    const [items, setItems] = useState<CartItem[]>([]); 
+    // 1. Inisialisasi state dengan mencoba mengambil data dari LocalStorage
+    const [items, setItems] = useState<CartItem[]>([]);
+    const [isInitialized, setIsInitialized] = useState(false);
 
-    // Log items to console whenever they change
+    // 2. Load data saat pertama kali aplikasi dijalankan (Client-side only)
     useEffect(() => {
-        console.log("Cart items updated:", items);
-    }, [items]);
+        const savedCart = localStorage.getItem('smoothievibes_cart');
+        if (savedCart) {
+            try {
+                setItems(JSON.parse(savedCart));
+            } catch (error) {
+                console.error("Gagal memuat keranjang:", error);
+            }
+        }
+        setIsInitialized(true);
+    }, []);
 
-    // Hitung total item untuk badge
+    // 3. Simpan data ke LocalStorage setiap kali ada perubahan pada 'items'
+    useEffect(() => {
+        if (isInitialized) {
+            localStorage.setItem('smoothievibes_cart', JSON.stringify(items));
+        }
+    }, [items, isInitialized]);
+
     const totalItems = useMemo(() => {
         return items.reduce((total, item) => total + item.quantity, 0);
     }, [items]);
 
-    // Fungsi untuk menambah item
     const addItem = (newItem: CartItem) => {
         if (newItem.stock <= 0) {
-            // Optional: Tampilkan notifikasi bahwa stok habis
             console.warn(`Stok untuk ${newItem.name} habis.`);
-            return; // Hentikan penambahan jika stok 0 atau kurang
+            return;
         }
 
         setItems(prevItems => {
             const existingItem = prevItems.find(item => item.id === newItem.id);
             if (existingItem) {
-                // Jika sudah ada, tambahkan kuantitas, tapi jangan melebihi stok
-                const newQuantity = existingItem.quantity + newItem.quantity;
+                const newQuantity = existingItem.quantity + (newItem.quantity || 1);
                 return prevItems.map(item => 
                     item.id === newItem.id 
-                        ? { ...item, quantity: Math.min(newQuantity, item.stock) } // Batasi kuantitas dengan stok
+                        ? { ...item, quantity: Math.min(newQuantity, item.stock) }
                         : item
                 );
             } else {
-                // Jika item baru, tambahkan ke array
                 return [...prevItems, { ...newItem, quantity: Math.min(newItem.quantity || 1, newItem.stock) }];
             }
         });
     };
 
-    // Fungsi untuk update quantity
     const updateQuantity = (id: number, delta: number) => {
         setItems(prevItems => 
             prevItems.map(item => {
                 if (item.id === id) {
                     const newQuantity = item.quantity + delta;
-                    // Batasi kuantitas antara 1 dan stok yang tersedia
                     return { ...item, quantity: Math.max(1, Math.min(newQuantity, item.stock)) };
                 }
                 return item;
@@ -82,15 +88,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         setItems(prevItems => prevItems.filter(item => item.id !== id));
     };
 
+    const clearCart = () => {
+        setItems([]);
+    };
 
     return (
-        <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, totalItems }}>
+        <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, totalItems }}>
             {children}
         </CartContext.Provider>
     );
 };
 
-// Custom Hook untuk mempermudah penggunaan Context
 export const useCart = () => {
     const context = useContext(CartContext);
     if (context === undefined) {

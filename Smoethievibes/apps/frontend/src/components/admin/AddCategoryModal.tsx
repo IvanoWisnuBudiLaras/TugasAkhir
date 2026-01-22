@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
 interface AddCategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -29,8 +31,8 @@ export default function AddCategoryModal({ isOpen, onClose, onCategoryAdded }: A
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("/api/categories", {
+      const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+      const response = await fetch(`${API_URL}/categories`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

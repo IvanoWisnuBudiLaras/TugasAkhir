@@ -1,39 +1,34 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-1.1.x"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DATABASE_DIRECT_URL")
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  phone     String?
-  address   String?
-  avatar    String?
-  name      String?
-  role      UserRole @default(CUSTOMER)
-  isActive  Boolean  @default(true)
-  lastLogin DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String         @id @default(cuid())
+  email         String         @unique
+  password      String
+  phone         String?
+  address       String?
+  avatar        String?
+  name          String?
+  role          UserRole       @default(CUSTOMER)
+  isActive      Boolean        @default(true)
+  lastLogin     DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  UserAnalytics UserAnalytics?
+  orders        Order[]
+  otps          Otp[]
 
-  orders Order[]
-  otps Otp[]
-  analytics UserAnalytics?
-
-  @@index([email]) // Index untuk login queries
-  @@index([role, isActive]) // Index untuk user filtering
-  @@index([createdAt]) // Index untuk sorting dan analytics
+  @@index([email])
+  @@index([role, isActive])
+  @@index([createdAt])
   @@map("users")
 }
 
@@ -41,121 +36,85 @@ model Otp {
   id        String   @id @default(cuid())
   email     String
   code      String
-  action    String   @default("LOGIN") // LOGIN, REGISTER, FORGOT_PASSWORD
+  action    String   @default("LOGIN")
   expiresAt DateTime
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  user User? @relation(fields: [email], references: [email], onDelete: Cascade)
+  user      User     @relation(fields: [email], references: [email], onDelete: Cascade)
 
   @@unique([email, code])
-  @@index([email, expiresAt, used]) // Composite index untuk validasi OTP
-  @@index([createdAt]) // Index untuk cleanup job
+  @@index([email, expiresAt, used])
+  @@index([createdAt])
   @@map("otps")
 }
 
 model Category {
-  id          String    @id @default(cuid()) // ID unik kategori
-  name        String    @unique // Nama kategori (unique)
-  description String? // Deskripsi kategori (opsional)
-  createdAt   DateTime  @default(now()) // Waktu pembuatan
-  updatedAt   DateTime  @updatedAt // Waktu update terakhir
-
-  products Product[] // Relasi ke produk
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
 
   @@map("categories")
 }
 
 model Product {
-  id          String   @id @default(cuid()) // ID unik produk
-  name        String // Nama produk
-  slug        String   @unique // Slug unik untuk URL
-  description String? // Deskripsi produk (opsional)
-  price       Float // Harga default (ukuran M)
-  image       String? // Gambar produk (opsional)
-  stock       Int      @default(0) // Stok tersedia
-  categoryId  String // ID kategori
-  createdAt   DateTime @default(now()) // Waktu pembuatan
-  updatedAt   DateTime @updatedAt // Waktu update terakhir
+  id               String            @id @default(cuid())
+  name             String
+  slug             String            @unique
+  description      String?
+  price            Float
+  image            String?
+  stock            Int               @default(0)
+  categoryId       String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  ProductAnalytics ProductAnalytics?
+  orderItems       OrderItem[]
+  category         Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade) // Relasi ke kategori
-  orderItems OrderItem[] // Relasi ke item pesanan
-  analytics ProductAnalytics?
-
-  @@index([categoryId]) // Index untuk filter by category
-  @@index([name]) // Index untuk search by name
-  @@index([stock]) // Index untuk stock management
-  @@index([slug]) // Index untuk search by slug
+  @@index([categoryId])
+  @@index([name])
+  @@index([stock])
+  @@index([slug])
   @@map("products")
 }
 
 model Order {
-  id         String   @id @default(cuid()) // ID unik order
-  userId     String // ID user pemesan
-  status     OrderStatus @default(PENDING) // Status order (enum OrderStatus)
-  total      Float // Total harga pesanan
-  orderType  OrderType @default(TAKEAWAY) // Tipe order (enum OrderType)
-  queueNumber Int? // Nomor antrian (opsional)
-  tableNumber Int? // Nomor meja (opsional untuk dine-in)
-  notes      String? // Catatan khusus (opsional)
-  createdAt  DateTime @default(now()) // Waktu pemesanan
-  updatedAt  DateTime @updatedAt // Waktu update terakhir
+  id          String      @id @default(cuid())
+  userId      String
+  status      OrderStatus @default(PENDING)
+  total       Float
+  orderType   OrderType   @default(TAKEAWAY)
+  queueNumber Int?
+  tableNumber Int?
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  orderItems  OrderItem[]
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade) // Relasi ke user
-  orderItems OrderItem[] // Relasi ke item pesanan
-
-  @@index([userId, createdAt]) // Composite index untuk user order history
-  @@index([status, createdAt]) // Composite index untuk order management
-  @@index([orderType, status]) // Composite index untuk order filtering
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([orderType, status])
   @@map("orders")
 }
 
 model OrderItem {
-  id        String  @id @default(cuid()) // ID unik item order
-  orderId   String // ID order
-  productId String // ID produk
-  quantity  Int // Jumlah item yang dipesan
-  price     Float // Harga per item saat dipesan
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade) // Relasi ke order
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade) // Relasi ke produk
-
-  @@unique([orderId, productId]) // Unique constraint: 1 produk per order
-  @@index([orderId]) // Index untuk order item lookup
-  @@index([productId]) // Index untuk product sales analysis
+  @@unique([orderId, productId])
+  @@index([orderId])
+  @@index([productId])
   @@map("order_items")
-}
-
-model UserAnalytics {
-  id                String    @id @default(cuid())
-  userId            String    @unique
-  totalOrders       Int       @default(0)
-  totalSpent        Float     @default(0)
-  lastOrderDate     DateTime?
-  firstOrderDate    DateTime?
-  averageOrderValue Float     @default(0)
-  updatedAt         DateTime  @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
-model ProductAnalytics {
-  id            String    @id @default(cuid())
-  productId     String    @unique
-  totalSold     Int       @default(0)
-  totalRevenue  Float     @default(0)
-  averageRating Float?
-  lastSoldDate  DateTime?
-  stockAlerts   Int       @default(0)
-  updatedAt     DateTime  @updatedAt
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@index([totalSold])
-  @@index([stockAlerts])
 }
 
 model DailyOrderSummary {
@@ -175,9 +134,35 @@ model DailyOrderSummary {
   @@index([date])
 }
 
-// === ENUMS === //
+model ProductAnalytics {
+  id            String    @id
+  productId     String    @unique
+  totalSold     Int       @default(0)
+  totalRevenue  Float     @default(0)
+  averageRating Float?
+  lastSoldDate  DateTime?
+  stockAlerts   Int       @default(0)
+  updatedAt     DateTime
+  products      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-// Role user: ADMIN atau USER biasa
+  @@index([stockAlerts])
+  @@index([totalSold])
+}
+
+model UserAnalytics {
+  id                String    @id
+  userId            String    @unique
+  totalOrders       Int       @default(0)
+  totalSpent        Float     @default(0)
+  lastOrderDate     DateTime?
+  firstOrderDate    DateTime?
+  averageOrderValue Float     @default(0)
+  updatedAt         DateTime
+  users             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 enum UserRole {
   ADMIN
   CUSTOMER
@@ -185,7 +170,6 @@ enum UserRole {
   MANAGER
 }
 
-// Status order: dari pending sampai selesai
 enum OrderStatus {
   PENDING
   CONFIRMED
@@ -196,25 +180,20 @@ enum OrderStatus {
   REFUNDED
 }
 
-// Tipe order: dibawa, makan di tempat, atau delivery
 enum OrderType {
-  TAKEAWAY  // Bawa pulang
-  DINE_IN   // Makan di tempat
-  DELIVERY  // Antar ke rumah
+  TAKEAWAY
+  DINE_IN
+  DELIVERY
 }
 
-// Tipe produk: minuman, makanan, dessert
 enum ProductType {
-  DRINK    // Minuman
-  FOOD     // Makanan
-  SNACK    // Camilan
+  DRINK
+  FOOD
+  SNACK
 }
 
-// Metode pembayaran: WhatsApp, tunai, COD
 enum PaymentMethod {
-  WHATSAPP  // Transfer via WhatsApp
-  CASH      // Bayar tunai
-  COD       // Cash on delivery
+  WHATSAPP
+  CASH
+  COD
 }
-
-// === END ENUMS === //

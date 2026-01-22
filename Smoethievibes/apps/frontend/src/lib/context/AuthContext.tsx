@@ -1,8 +1,10 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { authAPI } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
+// Interface tetap sama
 interface User {
   id: string;
   email: string;
@@ -19,122 +21,107 @@ interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   verifyOtp: (email: string, otp: string) => Promise<void>;
-  checkAuthStatus: () => Promise<void>; // Menambahkan fungsi ini ke interface
+  checkAuthStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth harus digunakan di dalam AuthProvider");
-  }
+  if (!context) throw new Error("useAuth harus digunakan di dalam AuthProvider");
   return context;
 };
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-
-  const getToken = () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('access_token');
-    }
-    return null;
-  };
+  const router = useRouter();
 
   const setToken = (token: string | null) => {
     if (typeof window !== 'undefined') {
-      if (token) {
-        localStorage.setItem('access_token', token);
-      } else {
-        localStorage.removeItem('access_token');
-      }
+      if (token) localStorage.setItem('access_token', token);
+      else localStorage.removeItem('access_token');
     }
   };
 
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  const checkAuthStatus = async () => {
-    const token = getToken();
+  // PENTING: Gunakan useCallback agar fungsi ini stabil
+  const checkAuthStatus = useCallback(async () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    
     if (!token) {
-      setAuthLoading(false);
       setUser(null);
+      setAuthLoading(false);
       return;
     }
 
     try {
       setAuthLoading(true);
       const response = await authAPI.getMe();
+      
       if (response) {
-        setUser(response.data || response); 
+        // --- BAGIAN YANG DITAMBAHKAN/DIPERBAIKI ---
+        // Ini memastikan kita mengambil object user baik itu dibungkus .data atau tidak
+        const userData = response.data?.user || response.data || response;
+        
+        console.log("Auth Check - User Role:", userData.role); // Debugging untuk cek role di console
+        
+        setUser(userData);
+        // ------------------------------------------
+      } else {
+        setToken(null);
+        setUser(null);
       }
     } catch (error) {
-      console.warn("Session expired or invalid token");
+      console.error("Auth check failed:", error);
       setToken(null);
       setUser(null);
     } finally {
       setAuthLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    checkAuthStatus();
+  }, [checkAuthStatus]);
 
   const login = async (email: string, password: string) => {
-    try {
-      const response = await authAPI.login(email, password);
-      if (response.data) {
-        setUser(response.data.user);
-        setToken(response.data.access_token);
-      }
-    } catch (error) {
-      if (error instanceof Error) throw error;
-      throw new Error("Login failed");
-    }
-  };
-
-  const register = async (email: string, password: string, name: string) => {
-    try {
-      const response = await authAPI.register(email, password, name);
-      if (response.data) {
-        setUser(response.data.user);
-        setToken(response.data.access_token);
-      }
-    } catch (error) {
-      if (error instanceof Error) throw error;
-      throw new Error("Registration failed");
+    const response = await authAPI.login(email, password);
+    if (response.data) {
+      setToken(response.data.access_token);
+      setUser(response.data.user);
+      router.push('/');
     }
   };
 
   const logout = async () => {
     try {
-      await authAPI.logout();
-    } catch (error) {
-      console.error("Logout error:", error);
+      // Kita panggil API tapi tidak perlu menunggu (await) terlalu lama
+      authAPI.logout();
     } finally {
-      setUser(null);
+      // Yang paling penting state di client bersih
       setToken(null);
+      setUser(null);
+      router.replace('/Auth');
+    }
+  };
+
+  const register = async (email: string, password: string, name: string) => {
+    const response = await authAPI.register(email, password, name);
+    if (response.data) {
+      setToken(response.data.access_token);
+      setUser(response.data.user);
     }
   };
 
   const verifyOtp = async (email: string, otp: string) => {
-    try {
-      const response = await authAPI.verifyOtp(email, otp);
-      if (response.data) {
-        setUser(response.data.user);
-        setToken(response.data.access_token);
-      }
-    } catch (error) {
-      if (error instanceof Error) throw error;
-      throw new Error("OTP verification failed");
+    const response = await authAPI.verifyOtp(email, otp);
+    if (response.data) {
+      setToken(response.data.access_token);
+      setUser(response.data.user);
     }
   };
 
-  const value: AuthContextType = {
+  const value = {
     user,
     isAuthenticated: !!user,
     authLoading,
